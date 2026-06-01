@@ -1,0 +1,11 @@
+interface:
+  display_name: "散热器逆向设计"
+  short_description: "使用 threshold-CVAE MCP 工具生成、改型和验证散热器方案。"
+  default_prompt: "使用 $heatsink-inverse-design 基于 threshold-CVAE MCP 工具生成并优化散热器候选方案。"
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "heatsink_inverse_design"
+      description: "提供 threshold-CVAE 散热器候选生成、温度预测、评分排序、几何改型、仿真验证和导出能力的 MCP Server。"
+policy:
+  allow_implicit_invocation: true

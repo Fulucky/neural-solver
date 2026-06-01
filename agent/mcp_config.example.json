@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "heatsink_inverse_design": {
+      "type": "remote",
+      "url": "http://127.0.0.1:9000"
+    }
+  }
+}
