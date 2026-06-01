@@ -138,6 +138,21 @@ python scripts\configure_inverse_design.py `
 
 配置修改后，新的 API 请求会读取新配置。为了避免已经缓存的旧 checkpoint 继续占用内存，建议重启 `python main.py` 进程。
 
+默认配置中：
+
+- `diversity_rerank_weight` 为 `0.15`，表示默认启用多样性 rerank；设为 `0` 可关闭。
+- `engineering_variant_mode` 为 `auto`，表示默认启用自动工程扰动兜底；只有 Top-K 多样性不足且候选有温度余量时才会生成扰动变体。
+- `engineering_variant_mode` 可选 `off`、`auto`、`on`。`off` 关闭，`on` 强制尝试工程扰动。
+
+修改工程扰动配置示例：
+
+```powershell
+python scripts\configure_inverse_design.py `
+  --engineering-variant-mode auto `
+  --engineering-variant-count-per-candidate 2 `
+  --engineering-variant-scale 0.08
+```
+
 单次请求也可以临时覆盖配置，不会改 JSON 文件：
 
 ```json

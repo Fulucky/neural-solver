@@ -81,6 +81,14 @@ def generate_rows(args: argparse.Namespace, guided: bool = False):
         args.top_k,
         diversity_rerank_weight=getattr(args, "diversity_rerank_weight", 0.15),
         diversity_temp_tolerance=getattr(args, "diversity_temp_tolerance", 2.0),
+        engineering_variant_mode=getattr(args, "engineering_variant_mode", "off"),
+        engineering_variant_count_per_candidate=getattr(args, "engineering_variant_count_per_candidate", 2),
+        engineering_variant_max_trials=getattr(args, "engineering_variant_max_trials", 20),
+        engineering_variant_scale=getattr(args, "engineering_variant_scale", 0.08),
+        engineering_variant_required_temp_margin=getattr(args, "engineering_variant_required_temp_margin", 1.0),
+        engineering_variant_min_unique_ratio=getattr(args, "engineering_variant_min_unique_ratio", 0.8),
+        engineering_variant_min_norm_mean_dist=getattr(args, "engineering_variant_min_norm_mean_dist", 1.0),
+        engineering_variant_min_norm_min_dist=getattr(args, "engineering_variant_min_norm_min_dist", 0.3),
     )
 
 

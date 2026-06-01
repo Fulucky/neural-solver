@@ -50,8 +50,8 @@ class InferenceRequest(BaseModel):
     top_k: int | None = None
     candidate_pool_size: int | None = Field(default=None, alias="num_samples")
     optimization_priority: list[str] | None = None
-    diversity_rerank_weight: float = 0.15
-    diversity_temp_tolerance: float = 2.0
+    diversity_rerank_weight: float | None = None
+    diversity_temp_tolerance: float | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -81,6 +81,14 @@ class GenerateRequest(BaseModel):
     temperature_weight: float | None = None
     threshold_weight: float | None = None
     guidance_scale: float | None = None
+    engineering_variant_mode: Literal["off", "auto", "on"] | None = None
+    engineering_variant_count_per_candidate: int | None = None
+    engineering_variant_max_trials: int | None = None
+    engineering_variant_scale: float | None = None
+    engineering_variant_required_temp_margin: float | None = None
+    engineering_variant_min_unique_ratio: float | None = None
+    engineering_variant_min_norm_mean_dist: float | None = None
+    engineering_variant_min_norm_min_dist: float | None = None
 
 
 class PredictRequest(BaseModel):
@@ -215,8 +223,46 @@ def _make_args(payload: GenerateRequest) -> argparse.Namespace:
         temperature_weight=float(payload.temperature_weight if payload.temperature_weight is not None else config.temperature_weight),
         threshold_weight=float(payload.threshold_weight if payload.threshold_weight is not None else config.threshold_weight),
         guidance_scale=float(payload.guidance_scale if payload.guidance_scale is not None else config.guidance_scale),
-        diversity_rerank_weight=float(request.diversity_rerank_weight),
-        diversity_temp_tolerance=float(request.diversity_temp_tolerance),
+        diversity_rerank_weight=float(
+            request.diversity_rerank_weight if request.diversity_rerank_weight is not None else config.diversity_rerank_weight
+        ),
+        diversity_temp_tolerance=float(
+            request.diversity_temp_tolerance if request.diversity_temp_tolerance is not None else config.diversity_temp_tolerance
+        ),
+        engineering_variant_mode=payload.engineering_variant_mode or config.engineering_variant_mode,
+        engineering_variant_count_per_candidate=int(
+            payload.engineering_variant_count_per_candidate
+            if payload.engineering_variant_count_per_candidate is not None
+            else config.engineering_variant_count_per_candidate
+        ),
+        engineering_variant_max_trials=int(
+            payload.engineering_variant_max_trials
+            if payload.engineering_variant_max_trials is not None
+            else config.engineering_variant_max_trials
+        ),
+        engineering_variant_scale=float(
+            payload.engineering_variant_scale if payload.engineering_variant_scale is not None else config.engineering_variant_scale
+        ),
+        engineering_variant_required_temp_margin=float(
+            payload.engineering_variant_required_temp_margin
+            if payload.engineering_variant_required_temp_margin is not None
+            else config.engineering_variant_required_temp_margin
+        ),
+        engineering_variant_min_unique_ratio=float(
+            payload.engineering_variant_min_unique_ratio
+            if payload.engineering_variant_min_unique_ratio is not None
+            else config.engineering_variant_min_unique_ratio
+        ),
+        engineering_variant_min_norm_mean_dist=float(
+            payload.engineering_variant_min_norm_mean_dist
+            if payload.engineering_variant_min_norm_mean_dist is not None
+            else config.engineering_variant_min_norm_mean_dist
+        ),
+        engineering_variant_min_norm_min_dist=float(
+            payload.engineering_variant_min_norm_min_dist
+            if payload.engineering_variant_min_norm_min_dist is not None
+            else config.engineering_variant_min_norm_min_dist
+        ),
     )
 
 
@@ -241,6 +287,7 @@ def _score_rows(
 
     payload = _load_payload(_checkpoint_path(checkpoint_path, method), _device(device), _surrogate_checkpoint(surrogate_checkpoint))
     rows = score_with_surrogate(
+        # 评分/预测已有候选时不自动制造新候选，工程扰动只用于生成推荐 Top-K。
         payload,
         _condition_dict(request),
         _bbox_dict(request),

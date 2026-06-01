@@ -40,6 +40,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--temperature-weight", type=float, help="Temperature loss weight.")
     parser.add_argument("--threshold-weight", type=float, help="Threshold violation loss weight.")
     parser.add_argument("--guidance-scale", type=float, help="Diffusion guidance scale.")
+    parser.add_argument("--diversity-rerank-weight", type=float, help="Diversity-aware Top-K reranking weight.")
+    parser.add_argument("--diversity-temp-tolerance", type=float, help="Preferred temperature window for reranking.")
+    parser.add_argument("--engineering-variant-mode", choices=["off", "auto", "on"], help="Engineering perturbation mode.")
+    parser.add_argument("--engineering-variant-count-per-candidate", type=int, help="Accepted variants per selected candidate.")
+    parser.add_argument("--engineering-variant-max-trials", type=int, help="Maximum perturbation trials per selected candidate.")
+    parser.add_argument("--engineering-variant-scale", type=float, help="Perturbation step as a fraction of each field range.")
+    parser.add_argument("--engineering-variant-required-temp-margin", type=float, help="Required temperature margin for variants.")
+    parser.add_argument("--engineering-variant-min-unique-ratio", type=float, help="Auto-mode unique ratio threshold.")
+    parser.add_argument("--engineering-variant-min-norm-mean-dist", type=float, help="Auto-mode normalized mean-distance threshold.")
+    parser.add_argument("--engineering-variant-min-norm-min-dist", type=float, help="Auto-mode normalized min-distance threshold.")
     return parser
 
 
@@ -63,6 +73,16 @@ def main(argv: list[str] | None = None) -> None:
         "temperature_weight": args.temperature_weight,
         "threshold_weight": args.threshold_weight,
         "guidance_scale": args.guidance_scale,
+        "diversity_rerank_weight": args.diversity_rerank_weight,
+        "diversity_temp_tolerance": args.diversity_temp_tolerance,
+        "engineering_variant_mode": args.engineering_variant_mode,
+        "engineering_variant_count_per_candidate": args.engineering_variant_count_per_candidate,
+        "engineering_variant_max_trials": args.engineering_variant_max_trials,
+        "engineering_variant_scale": args.engineering_variant_scale,
+        "engineering_variant_required_temp_margin": args.engineering_variant_required_temp_margin,
+        "engineering_variant_min_unique_ratio": args.engineering_variant_min_unique_ratio,
+        "engineering_variant_min_norm_mean_dist": args.engineering_variant_min_norm_mean_dist,
+        "engineering_variant_min_norm_min_dist": args.engineering_variant_min_norm_min_dist,
     }
     if not any(value is not None for value in updates.values()):
         raise SystemExit("No updates provided. Use --show to inspect current config.")
@@ -73,4 +93,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-

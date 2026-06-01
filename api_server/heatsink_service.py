@@ -40,6 +40,14 @@ def recommend_size(data: dict[str, Any]) -> dict[str, Any]:
         temperature_weight=data.get("temperature_weight"),
         threshold_weight=data.get("threshold_weight"),
         guidance_scale=data.get("guidance_scale"),
+        engineering_variant_mode=data.get("engineering_variant_mode"),
+        engineering_variant_count_per_candidate=data.get("engineering_variant_count_per_candidate"),
+        engineering_variant_max_trials=data.get("engineering_variant_max_trials"),
+        engineering_variant_scale=data.get("engineering_variant_scale"),
+        engineering_variant_required_temp_margin=data.get("engineering_variant_required_temp_margin"),
+        engineering_variant_min_unique_ratio=data.get("engineering_variant_min_unique_ratio"),
+        engineering_variant_min_norm_mean_dist=data.get("engineering_variant_min_norm_mean_dist"),
+        engineering_variant_min_norm_min_dist=data.get("engineering_variant_min_norm_min_dist"),
     )
     return generate_candidates(payload)
 

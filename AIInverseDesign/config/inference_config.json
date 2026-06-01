@@ -9,6 +9,15 @@
   "latent_lr": 0.05,
   "temperature_weight": 1.0,
   "threshold_weight": 2.0,
-  "guidance_scale": 0.08
+  "guidance_scale": 0.08,
+  "diversity_rerank_weight": 0.15,
+  "diversity_temp_tolerance": 2.0,
+  "engineering_variant_mode": "auto",
+  "engineering_variant_count_per_candidate": 2,
+  "engineering_variant_max_trials": 20,
+  "engineering_variant_scale": 0.08,
+  "engineering_variant_required_temp_margin": 1.0,
+  "engineering_variant_min_unique_ratio": 0.8,
+  "engineering_variant_min_norm_mean_dist": 1.0,
+  "engineering_variant_min_norm_min_dist": 0.3
 }
-

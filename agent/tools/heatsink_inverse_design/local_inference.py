@@ -80,6 +80,14 @@ def make_generate_args(
     temperature_weight: float | None,
     threshold_weight: float | None,
     guidance_scale: float | None = None,
+    engineering_variant_mode: str | None = None,
+    engineering_variant_count_per_candidate: int | None = None,
+    engineering_variant_max_trials: int | None = None,
+    engineering_variant_scale: float | None = None,
+    engineering_variant_required_temp_margin: float | None = None,
+    engineering_variant_min_unique_ratio: float | None = None,
+    engineering_variant_min_norm_mean_dist: float | None = None,
+    engineering_variant_min_norm_min_dist: float | None = None,
 ) -> argparse.Namespace:
     condition = request["condition"]
     bbox = request["bbox"]
@@ -106,8 +114,40 @@ def make_generate_args(
         temperature_weight=float(temperature_weight if temperature_weight is not None else config.temperature_weight),
         threshold_weight=float(threshold_weight if threshold_weight is not None else config.threshold_weight),
         guidance_scale=float(guidance_scale if guidance_scale is not None else config.guidance_scale),
-        diversity_rerank_weight=float(request.get("diversity_rerank_weight", 0.15)),
-        diversity_temp_tolerance=float(request.get("diversity_temp_tolerance", 2.0)),
+        diversity_rerank_weight=float(request.get("diversity_rerank_weight", config.diversity_rerank_weight)),
+        diversity_temp_tolerance=float(request.get("diversity_temp_tolerance", config.diversity_temp_tolerance)),
+        engineering_variant_mode=engineering_variant_mode or config.engineering_variant_mode,
+        engineering_variant_count_per_candidate=int(
+            engineering_variant_count_per_candidate
+            if engineering_variant_count_per_candidate is not None
+            else config.engineering_variant_count_per_candidate
+        ),
+        engineering_variant_max_trials=int(
+            engineering_variant_max_trials if engineering_variant_max_trials is not None else config.engineering_variant_max_trials
+        ),
+        engineering_variant_scale=float(
+            engineering_variant_scale if engineering_variant_scale is not None else config.engineering_variant_scale
+        ),
+        engineering_variant_required_temp_margin=float(
+            engineering_variant_required_temp_margin
+            if engineering_variant_required_temp_margin is not None
+            else config.engineering_variant_required_temp_margin
+        ),
+        engineering_variant_min_unique_ratio=float(
+            engineering_variant_min_unique_ratio
+            if engineering_variant_min_unique_ratio is not None
+            else config.engineering_variant_min_unique_ratio
+        ),
+        engineering_variant_min_norm_mean_dist=float(
+            engineering_variant_min_norm_mean_dist
+            if engineering_variant_min_norm_mean_dist is not None
+            else config.engineering_variant_min_norm_mean_dist
+        ),
+        engineering_variant_min_norm_min_dist=float(
+            engineering_variant_min_norm_min_dist
+            if engineering_variant_min_norm_min_dist is not None
+            else config.engineering_variant_min_norm_min_dist
+        ),
     )
 
 
@@ -145,6 +185,14 @@ def generate_local_candidates(
     method: str | None = None,
     surrogate_checkpoint_value: str | None = None,
     guidance_scale: float | None = None,
+    engineering_variant_mode: str | None = None,
+    engineering_variant_count_per_candidate: int | None = None,
+    engineering_variant_max_trials: int | None = None,
+    engineering_variant_scale: float | None = None,
+    engineering_variant_required_temp_margin: float | None = None,
+    engineering_variant_min_unique_ratio: float | None = None,
+    engineering_variant_min_norm_mean_dist: float | None = None,
+    engineering_variant_min_norm_min_dist: float | None = None,
 ) -> dict[str, Any]:
     selected_method = inference_method(method)
     args = make_generate_args(
@@ -160,6 +208,14 @@ def generate_local_candidates(
         temperature_weight,
         threshold_weight,
         guidance_scale,
+        engineering_variant_mode,
+        engineering_variant_count_per_candidate,
+        engineering_variant_max_trials,
+        engineering_variant_scale,
+        engineering_variant_required_temp_margin,
+        engineering_variant_min_unique_ratio,
+        engineering_variant_min_norm_mean_dist,
+        engineering_variant_min_norm_min_dist,
     )
     if selected_method == "diffusion":
         from AIInverseDesign.infer.diffusion_inferencer import generate_rows

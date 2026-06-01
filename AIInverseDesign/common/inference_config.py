@@ -43,6 +43,16 @@ class InferenceConfig:
     temperature_weight: float
     threshold_weight: float
     guidance_scale: float
+    diversity_rerank_weight: float
+    diversity_temp_tolerance: float
+    engineering_variant_mode: str
+    engineering_variant_count_per_candidate: int
+    engineering_variant_max_trials: int
+    engineering_variant_scale: float
+    engineering_variant_required_temp_margin: float
+    engineering_variant_min_unique_ratio: float
+    engineering_variant_min_norm_mean_dist: float
+    engineering_variant_min_norm_min_dist: float
 
 
 def config_path() -> Path:
@@ -64,6 +74,16 @@ def _default_data() -> dict[str, Any]:
         "temperature_weight": 1.0,
         "threshold_weight": 2.0,
         "guidance_scale": 0.08,
+        "diversity_rerank_weight": 0.15,
+        "diversity_temp_tolerance": 2.0,
+        "engineering_variant_mode": "auto",
+        "engineering_variant_count_per_candidate": 2,
+        "engineering_variant_max_trials": 20,
+        "engineering_variant_scale": 0.08,
+        "engineering_variant_required_temp_margin": 1.0,
+        "engineering_variant_min_unique_ratio": 0.8,
+        "engineering_variant_min_norm_mean_dist": 1.0,
+        "engineering_variant_min_norm_min_dist": 0.3,
     }
 
 
@@ -128,6 +148,16 @@ def load_inference_config(path: str | Path | None = None) -> InferenceConfig:
         temperature_weight=float(data.get("temperature_weight") or 1.0),
         threshold_weight=float(data.get("threshold_weight") or 2.0),
         guidance_scale=float(data.get("guidance_scale") or 0.08),
+        diversity_rerank_weight=float(data.get("diversity_rerank_weight") or 0.15),
+        diversity_temp_tolerance=float(data.get("diversity_temp_tolerance") or 2.0),
+        engineering_variant_mode=str(data.get("engineering_variant_mode") or "auto"),
+        engineering_variant_count_per_candidate=int(data.get("engineering_variant_count_per_candidate") or 2),
+        engineering_variant_max_trials=int(data.get("engineering_variant_max_trials") or 20),
+        engineering_variant_scale=float(data.get("engineering_variant_scale") or 0.08),
+        engineering_variant_required_temp_margin=float(data.get("engineering_variant_required_temp_margin") or 1.0),
+        engineering_variant_min_unique_ratio=float(data.get("engineering_variant_min_unique_ratio") or 0.8),
+        engineering_variant_min_norm_mean_dist=float(data.get("engineering_variant_min_norm_mean_dist") or 1.0),
+        engineering_variant_min_norm_min_dist=float(data.get("engineering_variant_min_norm_min_dist") or 0.3),
     )
 
 

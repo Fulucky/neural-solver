@@ -36,6 +36,7 @@ from AIInverseDesign.common.data_adapter import (
     tensorize_target,
 )
 from AIInverseDesign.common.experiment_config import TEST_HEATSINKS
+from AIInverseDesign.common.inverse_scoring import score_candidates as score_candidates_with_engineering
 from AIInverseDesign.common.models import CVAE, ConditionBaselineMLP, DiffusionDenoiser, ForwardMLP
 
 LOGGER = logging.getLogger(__name__)
@@ -238,6 +239,14 @@ def add_common_infer_args(parser: argparse.ArgumentParser) -> None:
         default=2.0,
         help="Preferred predicted-temperature window, in degC, for diversity reranking within each feasibility group.",
     )
+    parser.add_argument("--engineering-variant-mode", choices=["off", "auto", "on"], default="off")
+    parser.add_argument("--engineering-variant-count-per-candidate", type=int, default=2)
+    parser.add_argument("--engineering-variant-max-trials", type=int, default=20)
+    parser.add_argument("--engineering-variant-scale", type=float, default=0.08)
+    parser.add_argument("--engineering-variant-required-temp-margin", type=float, default=1.0)
+    parser.add_argument("--engineering-variant-min-unique-ratio", type=float, default=0.8)
+    parser.add_argument("--engineering-variant-min-norm-mean-dist", type=float, default=1.0)
+    parser.add_argument("--engineering-variant-min-norm-min-dist", type=float, default=0.3)
 
 
 def set_seed(seed: int) -> None:
@@ -1143,54 +1152,33 @@ def score_candidates(
     top_k: int,
     diversity_rerank_weight: float = 0.15,
     diversity_temp_tolerance: float = 2.0,
+    engineering_variant_mode: str = "off",
+    engineering_variant_count_per_candidate: int = 2,
+    engineering_variant_max_trials: int = 20,
+    engineering_variant_scale: float = 0.08,
+    engineering_variant_required_temp_margin: float = 1.0,
+    engineering_variant_min_unique_ratio: float = 0.8,
+    engineering_variant_min_norm_mean_dist: float = 1.0,
+    engineering_variant_min_norm_min_dist: float = 0.3,
 ) -> List[Dict[str, float]]:
-    device = next(payload["forward_model"].parameters()).device
-    rows = []
-    seen = set()
-    for raw in geom_rows:
-        geom = build_full_geometry_dict(bbox, list(raw))
-        key = tuple(round(float(geom[name]), 3) for name in RECOMMEND_KEYS)
-        if key in seen:
-            continue
-        seen.add(key)
-        x = torch.tensor(
-            [[
-                *(float(condition[k]) for k in CONDITION_KEYS),
-                float(geom["base_width"]),
-                float(geom["base_depth"]),
-                float(geom["total_height"]),
-                float(geom["fin_height"]),
-                float(geom["fin_thickness"]),
-                float(geom["fin_clear_spacing"]),
-                float(geom["fin_break_thickness"]),
-                float(geom["fin_break_width"]),
-            ]],
-            dtype=torch.float32,
-            device=device,
-        )
-        with torch.no_grad():
-            pred = predict_temperature_tensor(
-                payload["forward_model"],
-                payload["forward_input_scaler"],
-                payload["target_scaler"],
-                x,
-            )
-        geom["pred_cpu_temp"] = float(pred.cpu().item())
-        geom["temp_threshold"] = float(temp_threshold)
-        geom["threshold_ok"] = bool(geom["pred_cpu_temp"] <= temp_threshold)
-        rows.append(geom)
-
-    rows.sort(key=lambda item: (not item["threshold_ok"], item["pred_cpu_temp"], item["fin_height"]))
-    rows = diversity_rerank_candidates(
-        rows,
-        payload,
-        top_k,
+    return score_candidates_with_engineering(
+        payload=payload,
+        condition=condition,
+        bbox=bbox,
+        geom_rows=geom_rows,
+        temp_threshold=temp_threshold,
+        top_k=top_k,
         diversity_rerank_weight=diversity_rerank_weight,
         diversity_temp_tolerance=diversity_temp_tolerance,
+        engineering_variant_mode=engineering_variant_mode,
+        engineering_variant_count_per_candidate=engineering_variant_count_per_candidate,
+        engineering_variant_max_trials=engineering_variant_max_trials,
+        engineering_variant_scale=engineering_variant_scale,
+        engineering_variant_required_temp_margin=engineering_variant_required_temp_margin,
+        engineering_variant_min_unique_ratio=engineering_variant_min_unique_ratio,
+        engineering_variant_min_norm_mean_dist=engineering_variant_min_norm_mean_dist,
+        engineering_variant_min_norm_min_dist=engineering_variant_min_norm_min_dist,
     )
-    for rank, row in enumerate(rows, start=1):
-        row["rank"] = rank
-    return rows
 
 
 def diversity_rerank_candidates(
