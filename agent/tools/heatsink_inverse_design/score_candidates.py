@@ -11,7 +11,9 @@ from .local_inference import score_local_candidates
 def score_candidates(
     request: dict[str, Any],
     candidates: list[dict[str, Any]],
+    method: str | None = None,
     checkpoint_path: str | None = None,
+    surrogate_checkpoint: str | None = None,
     device: str | None = None,
     top_k: int | None = None,
     api_base_url: str | None = None,
@@ -26,6 +28,8 @@ def score_candidates(
             checkpoint_path_value=checkpoint_path,
             device=device,
             top_k=top_k,
+            method=method,
+            surrogate_checkpoint_value=surrogate_checkpoint,
         )
     if route != "api":
         raise ValueError("route must be 'api' or 'local'")
@@ -35,7 +39,9 @@ def score_candidates(
         {
             "request": request,
             "candidates": candidates,
+            "method": method,
             "checkpoint_path": checkpoint_path,
+            "surrogate_checkpoint": surrogate_checkpoint,
             "device": device,
             "top_k": top_k,
         },

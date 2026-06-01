@@ -29,14 +29,17 @@ def recommend_size(data: dict[str, Any]) -> dict[str, Any]:
 
     payload = GenerateRequest(
         request=_request_payload(data),
+        method=data.get("method"),
         checkpoint_path=data.get("checkpoint_path"),
+        surrogate_checkpoint=data.get("surrogate_checkpoint"),
         device=data.get("device"),
         num_samples=data.get("num_samples"),
         top_k=data.get("top_k"),
-        latent_opt_steps=data.get("latent_opt_steps", 40),
-        latent_lr=data.get("latent_lr", 5e-2),
-        temperature_weight=data.get("temperature_weight", 1.0),
-        threshold_weight=data.get("threshold_weight", 2.0),
+        latent_opt_steps=data.get("latent_opt_steps"),
+        latent_lr=data.get("latent_lr"),
+        temperature_weight=data.get("temperature_weight"),
+        threshold_weight=data.get("threshold_weight"),
+        guidance_scale=data.get("guidance_scale"),
     )
     return generate_candidates(payload)
 
@@ -50,7 +53,9 @@ def predict_candidate_temperature(data: dict[str, Any]) -> dict[str, Any]:
     payload = PredictRequest(
         request=_request_payload(data),
         geometry=data["geometry"],
+        method=data.get("method"),
         checkpoint_path=data.get("checkpoint_path"),
+        surrogate_checkpoint=data.get("surrogate_checkpoint"),
         device=data.get("device"),
     )
     return predict_temperature(payload)

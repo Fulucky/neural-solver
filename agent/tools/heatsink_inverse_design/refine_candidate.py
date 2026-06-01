@@ -13,7 +13,9 @@ def refine_candidate(
     candidate: dict[str, Any],
     updates: dict[str, float] | None = None,
     instruction: str = "",
+    method: str | None = None,
     checkpoint_path: str | None = None,
+    surrogate_checkpoint: str | None = None,
     device: str | None = None,
     api_base_url: str | None = None,
     route: str = "api",
@@ -28,6 +30,8 @@ def refine_candidate(
             instruction=instruction,
             checkpoint_path_value=checkpoint_path,
             device=device,
+            method=method,
+            surrogate_checkpoint_value=surrogate_checkpoint,
         )
     if route != "api":
         raise ValueError("route must be 'api' or 'local'")
@@ -39,7 +43,9 @@ def refine_candidate(
             "candidate": candidate,
             "updates": updates,
             "instruction": instruction,
+            "method": method,
             "checkpoint_path": checkpoint_path,
+            "surrogate_checkpoint": surrogate_checkpoint,
             "device": device,
         },
         api_base_url=api_base_url,

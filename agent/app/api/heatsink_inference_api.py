@@ -10,7 +10,6 @@ import argparse
 import csv
 import io
 import json
-import os
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -22,9 +21,6 @@ from pydantic import BaseModel, Field
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 AI_INVERSE_DESIGN_ROOT = PROJECT_ROOT / "AIInverseDesign"
-DEFAULT_CHECKPOINT = AI_INVERSE_DESIGN_ROOT / "outputs_guided_cvae" / "heatsink" / "best_model.pt"
-CHECKPOINT_ENV = "HEATSINK_THRESHOLD_CVAE_CHECKPOINT"
-DEVICE_ENV = "HEATSINK_API_DEVICE"
 
 for path in (PROJECT_ROOT, AI_INVERSE_DESIGN_ROOT):
     path_text = str(path)
@@ -51,8 +47,8 @@ class InferenceRequest(BaseModel):
     bbox: BoundingBox
     temp_threshold: float | None = None
     temp_limit: float | None = None
-    top_k: int = 10
-    candidate_pool_size: int = Field(default=1024, alias="num_samples")
+    top_k: int | None = None
+    candidate_pool_size: int | None = Field(default=None, alias="num_samples")
     optimization_priority: list[str] | None = None
     diversity_rerank_weight: float = 0.15
     diversity_temp_tolerance: float = 2.0
@@ -74,27 +70,34 @@ class Geometry(BaseModel):
 
 class GenerateRequest(BaseModel):
     request: InferenceRequest
+    method: Literal["cvae", "threshold-cvae", "diffusion"] | None = None
     checkpoint_path: str | None = None
+    surrogate_checkpoint: str | None = None
     device: str | None = None
     num_samples: int | None = None
     top_k: int | None = None
-    latent_opt_steps: int = 40
-    latent_lr: float = 5e-2
-    temperature_weight: float = 1.0
-    threshold_weight: float = 2.0
+    latent_opt_steps: int | None = None
+    latent_lr: float | None = None
+    temperature_weight: float | None = None
+    threshold_weight: float | None = None
+    guidance_scale: float | None = None
 
 
 class PredictRequest(BaseModel):
     request: InferenceRequest
     geometry: Geometry
+    method: Literal["cvae", "threshold-cvae", "diffusion"] | None = None
     checkpoint_path: str | None = None
+    surrogate_checkpoint: str | None = None
     device: str | None = None
 
 
 class ScoreRequest(BaseModel):
     request: InferenceRequest
     candidates: list[Geometry]
+    method: Literal["cvae", "threshold-cvae", "diffusion"] | None = None
     checkpoint_path: str | None = None
+    surrogate_checkpoint: str | None = None
     device: str | None = None
     top_k: int | None = None
 
@@ -104,7 +107,9 @@ class RefineRequest(BaseModel):
     candidate: Geometry
     updates: dict[str, float] | None = None
     instruction: str = ""
+    method: Literal["cvae", "threshold-cvae", "diffusion"] | None = None
     checkpoint_path: str | None = None
+    surrogate_checkpoint: str | None = None
     device: str | None = None
 
 
@@ -120,12 +125,32 @@ app = FastAPI(
 )
 
 
-def _checkpoint_path(path: str | None = None) -> str:
-    return str(Path(path or os.getenv(CHECKPOINT_ENV) or DEFAULT_CHECKPOINT).expanduser())
+def _active_config():
+    from AIInverseDesign.common.inference_config import load_inference_config
+
+    return load_inference_config()
+
+
+def _method(method: str | None = None) -> str:
+    return method or _active_config().method
+
+
+def _checkpoint_path(path: str | None = None, method: str | None = None) -> str:
+    if path:
+        return str(Path(path).expanduser())
+    if method:
+        from AIInverseDesign.common.inference_config import default_checkpoint_for_method
+
+        return default_checkpoint_for_method(method)
+    return _active_config().checkpoint_path
+
+
+def _surrogate_checkpoint(path: str | None = None) -> str:
+    return str(Path(path).expanduser()) if path else _active_config().surrogate_checkpoint
 
 
 def _device(device: str | None = None) -> str:
-    return device or os.getenv(DEVICE_ENV) or "cpu"
+    return device or _active_config().device
 
 
 def _temp_threshold(request: InferenceRequest) -> float:
@@ -167,13 +192,14 @@ def _make_args(payload: GenerateRequest) -> argparse.Namespace:
     request = payload.request
     condition = request.condition
     bbox = request.bbox
+    config = _active_config()
     return argparse.Namespace(
-        checkpoint_path=_checkpoint_path(payload.checkpoint_path),
+        checkpoint_path=_checkpoint_path(payload.checkpoint_path, payload.method),
         output_csv="",
         output_json="",
-        surrogate_checkpoint="",
-        num_samples=int(payload.num_samples or request.candidate_pool_size),
-        top_k=int(payload.top_k or request.top_k),
+        surrogate_checkpoint=_surrogate_checkpoint(payload.surrogate_checkpoint),
+        num_samples=int(payload.num_samples or request.candidate_pool_size or config.num_samples),
+        top_k=int(payload.top_k or request.top_k or config.top_k),
         temp_threshold=_temp_threshold(request),
         chip_length=condition.chip_length,
         rjc=condition.Rjc,
@@ -184,33 +210,36 @@ def _make_args(payload: GenerateRequest) -> argparse.Namespace:
         base_depth=bbox.base_depth,
         total_height=bbox.total_height,
         device=_device(payload.device),
-        latent_opt_steps=int(payload.latent_opt_steps),
-        latent_lr=float(payload.latent_lr),
-        temperature_weight=float(payload.temperature_weight),
-        threshold_weight=float(payload.threshold_weight),
+        latent_opt_steps=int(payload.latent_opt_steps if payload.latent_opt_steps is not None else config.latent_opt_steps),
+        latent_lr=float(payload.latent_lr if payload.latent_lr is not None else config.latent_lr),
+        temperature_weight=float(payload.temperature_weight if payload.temperature_weight is not None else config.temperature_weight),
+        threshold_weight=float(payload.threshold_weight if payload.threshold_weight is not None else config.threshold_weight),
+        guidance_scale=float(payload.guidance_scale if payload.guidance_scale is not None else config.guidance_scale),
         diversity_rerank_weight=float(request.diversity_rerank_weight),
         diversity_temp_tolerance=float(request.diversity_temp_tolerance),
     )
 
 
 @lru_cache(maxsize=4)
-def _load_payload(checkpoint_path: str, device: str) -> dict[str, Any]:
+def _load_payload(checkpoint_path: str, device: str, surrogate_checkpoint: str) -> dict[str, Any]:
     import torch
     from AIInverseDesign.common.heatsink_inverse_common import load_checkpoint
 
-    return load_checkpoint(checkpoint_path, torch.device(device))
+    return load_checkpoint(checkpoint_path, torch.device(device), surrogate_checkpoint)
 
 
 def _score_rows(
     request: InferenceRequest,
     geometry_rows: list[list[float]],
+    method: str | None,
     checkpoint_path: str | None,
+    surrogate_checkpoint: str | None,
     device: str | None,
     top_k: int | None = None,
 ) -> list[dict[str, Any]]:
     from AIInverseDesign.common.heatsink_inverse_common import score_candidates as score_with_surrogate
 
-    payload = _load_payload(_checkpoint_path(checkpoint_path), _device(device))
+    payload = _load_payload(_checkpoint_path(checkpoint_path, method), _device(device), _surrogate_checkpoint(surrogate_checkpoint))
     rows = score_with_surrogate(
         payload,
         _condition_dict(request),
@@ -229,13 +258,20 @@ def health() -> dict[str, str]:
 
 @app.post("/api/candidates/generate")
 def generate_candidates(payload: GenerateRequest) -> dict[str, Any]:
-    from AIInverseDesign.infer.cvae_inferencer import generate_rows
-
     args = _make_args(payload)
-    rows = generate_rows(args, guided=True)
+    method = _method(payload.method)
+    if method == "diffusion":
+        from AIInverseDesign.infer.diffusion_inferencer import generate_rows
+
+        rows = generate_rows(args)
+    else:
+        from AIInverseDesign.infer.cvae_inferencer import generate_rows
+
+        rows = generate_rows(args, guided=(method == "threshold-cvae"))
     return {
-        "method": "threshold-cvae",
+        "method": method,
         "checkpoint_path": args.checkpoint_path,
+        "surrogate_checkpoint": args.surrogate_checkpoint,
         "device": args.device,
         "num_samples": args.num_samples,
         "top_k": args.top_k,
@@ -249,7 +285,9 @@ def predict_temperature(payload: PredictRequest) -> dict[str, Any]:
     rows = _score_rows(
         payload.request,
         [_geometry_values(payload.geometry)],
+        payload.method,
         payload.checkpoint_path,
+        payload.surrogate_checkpoint,
         payload.device,
         top_k=1,
     )
@@ -263,12 +301,15 @@ def score_candidates(payload: ScoreRequest) -> dict[str, Any]:
     rows = _score_rows(
         payload.request,
         [_geometry_values(candidate) for candidate in payload.candidates],
+        payload.method,
         payload.checkpoint_path,
+        payload.surrogate_checkpoint,
         payload.device,
         top_k=payload.top_k or len(payload.candidates),
     )
     return {
         "method": "forward-surrogate-ranking",
+        "checkpoint_path": _checkpoint_path(payload.checkpoint_path, payload.method),
         "temp_threshold": _temp_threshold(payload.request),
         "candidates": rows,
     }
@@ -323,7 +364,9 @@ def refine_candidate(payload: RefineRequest) -> dict[str, Any]:
         PredictRequest(
             request=payload.request,
             geometry=Geometry(**refined),
+            method=payload.method,
             checkpoint_path=payload.checkpoint_path,
+            surrogate_checkpoint=payload.surrogate_checkpoint,
             device=payload.device,
         )
     )

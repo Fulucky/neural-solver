@@ -84,7 +84,86 @@ curl.exe -X POST http://127.0.0.1:8080/heatsink/recommend-size `
 - `condition` 是芯片和环境工况。
 - `bbox` 是散热器外包络尺寸。
 - `temp_threshold` 或 `temp_limit` 是目标温度上限。
-- `checkpoint_path` 指向本地训练好的 `best_model.pt`；如果不传，会使用 `AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt`。
+- `checkpoint_path` 指向本地训练好的 `best_model.pt`；如果不传，会使用 `config/inverse_design_inference.json` 里的默认模型。
+
+## 更换逆向设计技术路径和模型
+
+默认配置文件：
+
+```text
+AIInverseDesign/config/inference_config.json
+```
+
+支持的技术路径：
+
+```text
+cvae
+threshold-cvae
+diffusion
+```
+
+查看当前配置：
+
+```powershell
+python scripts\configure_inverse_design.py --show
+```
+
+切换到 threshold-CVAE：
+
+```powershell
+python scripts\configure_inverse_design.py `
+  --method threshold-cvae `
+  --checkpoint AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt `
+  --device cpu
+```
+
+切换到 diffusion：
+
+```powershell
+python scripts\configure_inverse_design.py `
+  --method diffusion `
+  --checkpoint AIInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt `
+  --guidance-scale 0.08 `
+  --device cpu
+```
+
+切换到 threshold-free CVAE：
+
+```powershell
+python scripts\configure_inverse_design.py `
+  --method cvae `
+  --checkpoint AIInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt `
+  --device cpu
+```
+
+配置修改后，新的 API 请求会读取新配置。为了避免已经缓存的旧 checkpoint 继续占用内存，建议重启 `python main.py` 进程。
+
+单次请求也可以临时覆盖配置，不会改 JSON 文件：
+
+```json
+{
+  "method": "diffusion",
+  "checkpoint_path": "D:\\path\\to\\diffusion\\best_model.pt",
+  "device": "cpu",
+  "request": {
+    "condition": {
+      "chip_length": 35,
+      "Rjc": 0.6,
+      "Rjb": 1.1,
+      "power": 85,
+      "wind_speed": 4
+    },
+    "bbox": {
+      "base_width": 40,
+      "base_depth": 40,
+      "total_height": 20
+    },
+    "temp_threshold": 80,
+    "top_k": 3,
+    "num_samples": 16
+  }
+}
+```
 
 ## 温度预测接口
 

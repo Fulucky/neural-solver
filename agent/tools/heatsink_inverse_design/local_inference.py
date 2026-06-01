@@ -6,7 +6,6 @@ import argparse
 import csv
 import io
 import json
-import os
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -17,26 +16,39 @@ AGENT_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 AI_INVERSE_DESIGN_ROOT = PROJECT_ROOT / "AIInverseDesign"
 INFER_DIR = AI_INVERSE_DESIGN_ROOT / "infer"
-DEFAULT_CHECKPOINT = AI_INVERSE_DESIGN_ROOT / "outputs_guided_cvae" / "heatsink" / "best_model.pt"
-CHECKPOINT_ENV = "HEATSINK_THRESHOLD_CVAE_CHECKPOINT"
-DEVICE_ENV = "HEATSINK_API_DEVICE"
-DEFAULT_DEVICE = "cpu"
 
 for path in (PROJECT_ROOT, AI_INVERSE_DESIGN_ROOT):
     path_text = str(path)
     if path_text not in sys.path:
         sys.path.insert(0, path_text)
 
-os.environ.setdefault(CHECKPOINT_ENV, str(DEFAULT_CHECKPOINT))
-os.environ.setdefault(DEVICE_ENV, DEFAULT_DEVICE)
+
+def active_config():
+    from AIInverseDesign.common.inference_config import load_inference_config
+
+    return load_inference_config()
 
 
-def checkpoint_path(path: str | None = None) -> str:
-    return str(Path(path or os.getenv(CHECKPOINT_ENV) or DEFAULT_CHECKPOINT).expanduser())
+def inference_method(method: str | None = None) -> str:
+    return method or active_config().method
+
+
+def checkpoint_path(path: str | None = None, method: str | None = None) -> str:
+    if path:
+        return str(Path(path).expanduser())
+    if method:
+        from AIInverseDesign.common.inference_config import default_checkpoint_for_method
+
+        return default_checkpoint_for_method(method)
+    return active_config().checkpoint_path
+
+
+def surrogate_checkpoint_path(path: str | None = None) -> str:
+    return str(Path(path).expanduser()) if path else active_config().surrogate_checkpoint
 
 
 def infer_device(device: str | None = None) -> str:
-    return device or os.getenv(DEVICE_ENV) or DEFAULT_DEVICE
+    return device or active_config().device
 
 
 def temp_threshold(request: dict[str, Any]) -> float:
@@ -57,24 +69,28 @@ def enrich_temperature_margin(row: dict[str, Any]) -> dict[str, Any]:
 
 def make_generate_args(
     request: dict[str, Any],
+    method: str | None,
     checkpoint_path_value: str | None,
+    surrogate_checkpoint_value: str | None,
     device: str | None,
     num_samples: int | None,
     top_k: int | None,
-    latent_opt_steps: int,
-    latent_lr: float,
-    temperature_weight: float,
-    threshold_weight: float,
+    latent_opt_steps: int | None,
+    latent_lr: float | None,
+    temperature_weight: float | None,
+    threshold_weight: float | None,
+    guidance_scale: float | None = None,
 ) -> argparse.Namespace:
     condition = request["condition"]
     bbox = request["bbox"]
+    config = active_config()
     return argparse.Namespace(
-        checkpoint_path=checkpoint_path(checkpoint_path_value),
+        checkpoint_path=checkpoint_path(checkpoint_path_value, method),
         output_csv="",
         output_json="",
-        surrogate_checkpoint="",
-        num_samples=int(num_samples or request.get("candidate_pool_size") or request.get("num_samples") or 1024),
-        top_k=int(top_k or request.get("top_k") or 10),
+        surrogate_checkpoint=surrogate_checkpoint_path(surrogate_checkpoint_value),
+        num_samples=int(num_samples or request.get("candidate_pool_size") or request.get("num_samples") or config.num_samples),
+        top_k=int(top_k or request.get("top_k") or config.top_k),
         temp_threshold=temp_threshold(request),
         chip_length=float(condition["chip_length"]),
         rjc=float(condition["Rjc"]),
@@ -85,21 +101,22 @@ def make_generate_args(
         base_depth=float(bbox["base_depth"]),
         total_height=float(bbox["total_height"]),
         device=infer_device(device),
-        latent_opt_steps=int(latent_opt_steps),
-        latent_lr=float(latent_lr),
-        temperature_weight=float(temperature_weight),
-        threshold_weight=float(threshold_weight),
+        latent_opt_steps=int(latent_opt_steps if latent_opt_steps is not None else config.latent_opt_steps),
+        latent_lr=float(latent_lr if latent_lr is not None else config.latent_lr),
+        temperature_weight=float(temperature_weight if temperature_weight is not None else config.temperature_weight),
+        threshold_weight=float(threshold_weight if threshold_weight is not None else config.threshold_weight),
+        guidance_scale=float(guidance_scale if guidance_scale is not None else config.guidance_scale),
         diversity_rerank_weight=float(request.get("diversity_rerank_weight", 0.15)),
         diversity_temp_tolerance=float(request.get("diversity_temp_tolerance", 2.0)),
     )
 
 
 @lru_cache(maxsize=4)
-def load_model_payload(path: str, device: str) -> dict[str, Any]:
+def load_model_payload(path: str, device: str, surrogate_checkpoint: str) -> dict[str, Any]:
     import torch
     from AIInverseDesign.common.heatsink_inverse_common import load_checkpoint
 
-    return load_checkpoint(path, torch.device(device))
+    return load_checkpoint(path, torch.device(device), surrogate_checkpoint)
 
 
 def geometry_values(geometry: dict[str, Any]) -> list[float]:
@@ -121,16 +138,20 @@ def generate_local_candidates(
     device: str | None,
     num_samples: int | None,
     top_k: int | None,
-    latent_opt_steps: int,
-    latent_lr: float,
-    temperature_weight: float,
-    threshold_weight: float,
+    latent_opt_steps: int | None,
+    latent_lr: float | None,
+    temperature_weight: float | None,
+    threshold_weight: float | None,
+    method: str | None = None,
+    surrogate_checkpoint_value: str | None = None,
+    guidance_scale: float | None = None,
 ) -> dict[str, Any]:
-    from AIInverseDesign.infer.cvae_inferencer import generate_rows
-
+    selected_method = inference_method(method)
     args = make_generate_args(
         request,
+        selected_method,
         checkpoint_path_value,
+        surrogate_checkpoint_value,
         device,
         num_samples,
         top_k,
@@ -138,11 +159,20 @@ def generate_local_candidates(
         latent_lr,
         temperature_weight,
         threshold_weight,
+        guidance_scale,
     )
-    rows = generate_rows(args, guided=True)
+    if selected_method == "diffusion":
+        from AIInverseDesign.infer.diffusion_inferencer import generate_rows
+
+        rows = generate_rows(args)
+    else:
+        from AIInverseDesign.infer.cvae_inferencer import generate_rows
+
+        rows = generate_rows(args, guided=(selected_method == "threshold-cvae"))
     return {
-        "method": "threshold-cvae",
+        "method": selected_method,
         "checkpoint_path": args.checkpoint_path,
+        "surrogate_checkpoint": args.surrogate_checkpoint,
         "device": args.device,
         "num_samples": args.num_samples,
         "top_k": args.top_k,
@@ -157,13 +187,16 @@ def score_local_candidates(
     checkpoint_path_value: str | None,
     device: str | None,
     top_k: int | None = None,
+    method: str | None = None,
+    surrogate_checkpoint_value: str | None = None,
 ) -> dict[str, Any]:
     from AIInverseDesign.common.heatsink_inverse_common import score_candidates
 
     condition = request["condition"]
     bbox = request["bbox"]
     infer_device_value = infer_device(device)
-    payload = load_model_payload(checkpoint_path(checkpoint_path_value), infer_device_value)
+    resolved_checkpoint = checkpoint_path(checkpoint_path_value, method)
+    payload = load_model_payload(resolved_checkpoint, infer_device_value, surrogate_checkpoint_path(surrogate_checkpoint_value))
     rows = score_candidates(
         payload,
         {
@@ -184,6 +217,7 @@ def score_local_candidates(
     )
     return {
         "method": "forward-surrogate-ranking",
+        "checkpoint_path": resolved_checkpoint,
         "temp_threshold": temp_threshold(request),
         "candidates": [enrich_temperature_margin(row) for row in rows],
     }
@@ -194,6 +228,8 @@ def predict_local_temperature(
     geometry: dict[str, Any],
     checkpoint_path_value: str | None,
     device: str | None,
+    method: str | None = None,
+    surrogate_checkpoint_value: str | None = None,
 ) -> dict[str, Any]:
     result = score_local_candidates(
         request=request,
@@ -201,6 +237,8 @@ def predict_local_temperature(
         checkpoint_path_value=checkpoint_path_value,
         device=device,
         top_k=1,
+        method=method,
+        surrogate_checkpoint_value=surrogate_checkpoint_value,
     )
     candidates = result["candidates"]
     if not candidates:
@@ -215,6 +253,8 @@ def refine_local_candidate(
     instruction: str,
     checkpoint_path_value: str | None,
     device: str | None,
+    method: str | None = None,
+    surrogate_checkpoint_value: str | None = None,
 ) -> dict[str, Any]:
     from AIInverseDesign.common.data_adapter import GEOMETRY_BOUNDS, clip_fin_clear_spacing_for_pitch, clip_value
 
@@ -267,6 +307,8 @@ def refine_local_candidate(
         geometry=refined,
         checkpoint_path_value=checkpoint_path_value,
         device=device,
+        method=method,
+        surrogate_checkpoint_value=surrogate_checkpoint_value,
     )
     return {"changes": changed, "candidate": predicted}
 

@@ -11,7 +11,9 @@ from .local_inference import predict_local_temperature
 def predict_temperature(
     request: dict[str, Any],
     geometry: dict[str, Any],
+    method: str | None = None,
     checkpoint_path: str | None = None,
+    surrogate_checkpoint: str | None = None,
     device: str | None = None,
     api_base_url: str | None = None,
     route: str = "api",
@@ -24,6 +26,8 @@ def predict_temperature(
             geometry=geometry,
             checkpoint_path_value=checkpoint_path,
             device=device,
+            method=method,
+            surrogate_checkpoint_value=surrogate_checkpoint,
         )
     if route != "api":
         raise ValueError("route must be 'api' or 'local'")
@@ -33,7 +37,9 @@ def predict_temperature(
         {
             "request": request,
             "geometry": geometry,
+            "method": method,
             "checkpoint_path": checkpoint_path,
+            "surrogate_checkpoint": surrogate_checkpoint,
             "device": device,
         },
         api_base_url=api_base_url,

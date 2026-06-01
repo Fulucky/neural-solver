@@ -33,9 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
-    configure_logging()
-    args = build_parser().parse_args()
+def generate_rows(args: argparse.Namespace):
     device = torch.device(args.device)
     payload = load_checkpoint(args.checkpoint_path, device, args.surrogate_checkpoint)
     model = load_diffusion_from_payload(payload, device)
@@ -82,7 +80,7 @@ def main() -> None:
             x = (x - args.guidance_scale * grad).detach()
 
     geom_raw = payload["recommend_scaler"].inverse_transform(x).detach().cpu().tolist()
-    rows = score_candidates(
+    return score_candidates(
         payload,
         condition,
         bbox,
@@ -92,6 +90,12 @@ def main() -> None:
         diversity_rerank_weight=args.diversity_rerank_weight,
         diversity_temp_tolerance=args.diversity_temp_tolerance,
     )
+
+
+def main() -> None:
+    configure_logging()
+    args = build_parser().parse_args()
+    rows = generate_rows(args)
     write_candidates(rows, args.output_csv, args.output_json)
     LOGGER.info("Generated %d candidates.", len(rows))
     for row in rows[: min(10, len(rows))]:
