@@ -8,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class HostRewriteMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable):
+        # 本地 MCP streamable HTTP 对 Host 较敏感；统一改成本地 API 地址。
         scope = request.scope
         headers = list(scope.get("headers", []))
         for index, (key, _value) in enumerate(headers):
@@ -16,4 +17,3 @@ class HostRewriteMiddleware(BaseHTTPMiddleware):
                 break
         scope["headers"] = headers
         return await call_next(request)
-

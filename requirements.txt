@@ -1,0 +1,16 @@
+# API runtime
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0
+
+# MCP server runtime
+mcp>=1.2.0
+
+# Model inference runtime
+torch>=2.1
+numpy>=1.24
+pandas>=2.0
+
+# Agent metadata / YAML checks
+PyYAML>=6.0
+

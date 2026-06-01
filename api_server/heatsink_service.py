@@ -8,6 +8,8 @@ from .config import configure_environment, configure_import_paths
 configure_import_paths()
 configure_environment()
 
+# 这里复用 agent/app/api 中已有的 Pydantic 入参模型和纯函数式推理入口。
+# api_server 只负责把公开 HTTP 请求转换成内部模型需要的结构，不直接实现算法。
 from agent.app.api.heatsink_inference_api import (  # noqa: E402
     GenerateRequest,
     PredictRequest,
@@ -17,11 +19,13 @@ from agent.app.api.heatsink_inference_api import (  # noqa: E402
 
 
 def _request_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """兼容两种请求格式：直接传 request，或把 request 字段包在外层。"""
+
     return data.get("request") or data
 
 
 def recommend_size(data: dict[str, Any]) -> dict[str, Any]:
-    """Generate heatsink size candidates from the public API payload shape."""
+    """根据公开 API 入参生成散热器候选尺寸。"""
 
     payload = GenerateRequest(
         request=_request_payload(data),
@@ -38,7 +42,7 @@ def recommend_size(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def predict_candidate_temperature(data: dict[str, Any]) -> dict[str, Any]:
-    """Predict CPU temperature for one candidate geometry."""
+    """预测单个候选几何尺寸对应的 CPU 温度。"""
 
     if "geometry" not in data:
         raise ValueError("missing required field: geometry")
