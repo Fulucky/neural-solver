@@ -36,11 +36,14 @@ def inference_method(method: str | None = None) -> str:
 def checkpoint_path(path: str | None = None, method: str | None = None) -> str:
     if path:
         return str(Path(path).expanduser())
+    config = active_config()
     if method:
+        if method == config.method:
+            return config.checkpoint_path
         from AIInverseDesign.common.inference_config import default_checkpoint_for_method
 
         return default_checkpoint_for_method(method)
-    return active_config().checkpoint_path
+    return config.checkpoint_path
 
 
 def surrogate_checkpoint_path(path: str | None = None) -> str:
