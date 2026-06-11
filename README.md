@@ -76,7 +76,7 @@ POST /heatsink/recommend-size
 ```powershell
 curl.exe -X POST http://127.0.0.1:8080/heatsink/recommend-size `
   -H "Content-Type: application/json" `
-  -d "{\"request\":{\"condition\":{\"chip_length\":35,\"Rjc\":0.6,\"Rjb\":1.1,\"power\":85,\"wind_speed\":4},\"bbox\":{\"base_width\":40,\"base_depth\":40,\"total_height\":20},\"temp_threshold\":80,\"top_k\":3,\"num_samples\":16},\"checkpoint_path\":\"D:\\path\\to\\best_model.pt\",\"device\":\"cpu\"}"
+  -d "{\"request\":{\"condition\":{\"chip_length\":35,\"Rjc\":0.6,\"Rjb\":1.1,\"power\":85,\"wind_speed\":4},\"bbox\":{\"base_width\":40,\"base_depth\":40,\"total_height\":20},\"temp_threshold\":80,\"top_k\":3,\"candidate_pool_size\":16},\"checkpoint_path\":\"D:\\path\\to\\best_model.pt\",\"device\":\"cpu\"}"
 ```
 
 说明：
@@ -175,7 +175,7 @@ python scripts\configure_inverse_design.py `
     },
     "temp_threshold": 80,
     "top_k": 3,
-    "num_samples": 16
+    "candidate_pool_size": 16
   }
 }
 ```

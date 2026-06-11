@@ -55,7 +55,7 @@ MCP Server `agent/mcp/heatsink-inverse-design/server.py` 暴露 6 个业务 tool
 - `surrogate_checkpoint`：温度代理模型 checkpoint。
 - `device`：例如 `cpu` 或 `cuda`。
 - `top_k`：未指定时使用配置文件默认值。
-- `candidate_pool_size` 或 `num_samples`：未指定时使用配置文件默认值。
+- `candidate_pool_size`：未指定时使用配置文件默认值。
 - `route`：可选，默认 `api`；用户明确要求本地源码推理时使用 `local`。
 
 排序与工程扰动可选字段：
@@ -205,4 +205,3 @@ MCP Server `agent/mcp/heatsink-inverse-design/server.py` 暴露 6 个业务 tool
 - 除非 `validate_candidates` 返回真实求解结果，否则不要声称已经完成 CFD 验证。
 - 不要把前端 Demo 当成执行路径；前端只用于说明业务功能。
 - 回复中保留单位：mm、W、m/s、degC、degC/W。
-

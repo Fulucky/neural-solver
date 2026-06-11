@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -48,7 +48,7 @@ class InferenceRequest(BaseModel):
     temp_threshold: float | None = None
     temp_limit: float | None = None
     top_k: int | None = None
-    candidate_pool_size: int | None = Field(default=None, alias="num_samples")
+    candidate_pool_size: int | None = None
     optimization_priority: list[str] | None = None
     diversity_rerank_weight: float | None = None
     diversity_temp_tolerance: float | None = None
@@ -74,7 +74,7 @@ class GenerateRequest(BaseModel):
     checkpoint_path: str | None = None
     surrogate_checkpoint: str | None = None
     device: str | None = None
-    num_samples: int | None = None
+    candidate_pool_size: int | None = None
     top_k: int | None = None
     latent_opt_steps: int | None = None
     latent_lr: float | None = None
@@ -209,7 +209,7 @@ def _make_args(payload: GenerateRequest) -> argparse.Namespace:
         output_csv="",
         output_json="",
         surrogate_checkpoint=_surrogate_checkpoint(payload.surrogate_checkpoint),
-        num_samples=int(payload.num_samples or request.candidate_pool_size or config.num_samples),
+        num_samples=int(payload.candidate_pool_size or request.candidate_pool_size or config.num_samples),
         top_k=int(payload.top_k or request.top_k or config.top_k),
         temp_threshold=_temp_threshold(request),
         chip_length=condition.chip_length,
@@ -323,7 +323,7 @@ def generate_candidates(payload: GenerateRequest) -> dict[str, Any]:
         "checkpoint_path": args.checkpoint_path,
         "surrogate_checkpoint": args.surrogate_checkpoint,
         "device": args.device,
-        "num_samples": args.num_samples,
+        "candidate_pool_size": args.num_samples,
         "top_k": args.top_k,
         "temp_threshold": args.temp_threshold,
         "candidates": [_row_with_margin(row) for row in rows],

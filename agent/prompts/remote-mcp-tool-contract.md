@@ -100,7 +100,6 @@ generate_candidates
 | `temp_threshold` | number | 是 | degC | CPU 温度阈值 |
 | `temp_limit` | number | 否 | degC | `temp_threshold` 的别名，二选一 |
 | `candidate_pool_size` | integer | 否 | - | 生成候选池大小 |
-| `num_samples` | integer | 否 | - | 生成候选池大小，优先级低于 tool 顶层 `num_samples` |
 | `top_k` | integer | 否 | - | 返回候选数量，优先级低于 tool 顶层 `top_k` |
 
 标准 `request` 示例：
@@ -181,7 +180,7 @@ generate_candidates
 | `route` | string | 是 | 远端部署必须传 `"local"` |
 | `checkpoint_path` | string or null | 否 | checkpoint 路径；通常不传，使用服务默认值 |
 | `device` | string or null | 否 | 推理设备，例如 `"cpu"` 或 `"cuda"`；通常不传 |
-| `num_samples` | integer or null | 否 | 生成候选池大小；建议远端测试先用 64 |
+| `candidate_pool_size` | integer or null | 否 | 生成候选池大小；建议远端测试先用 64 |
 | `top_k` | integer or null | 否 | 返回候选数量 |
 | `latent_opt_steps` | integer | 否 | 潜变量优化步数，默认 40 |
 | `latent_lr` | number | 否 | 潜变量优化学习率，默认 0.05 |
@@ -211,7 +210,7 @@ generate_candidates
     "candidate_pool_size": 64,
     "top_k": 5
   },
-  "num_samples": 64,
+  "candidate_pool_size": 64,
   "top_k": 5
 }
 ```
@@ -223,7 +222,7 @@ generate_candidates
 | `method` | string | 通常为 `"threshold-cvae"` |
 | `checkpoint_path` | string | 实际使用的 checkpoint |
 | `device` | string | 实际推理设备 |
-| `num_samples` | integer | 实际采样数量 |
+| `candidate_pool_size` | integer | 实际采样数量 |
 | `top_k` | integer | 返回候选数量 |
 | `temp_threshold` | number | 温度阈值 |
 | `candidates` | array | 候选列表，每项为候选几何加预测指标 |
@@ -608,7 +607,7 @@ base_height
     "candidate_pool_size": 64,
     "top_k": 5
   },
-  "num_samples": 64,
+  "candidate_pool_size": 64,
   "top_k": 5
 }
 ```

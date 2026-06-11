@@ -33,7 +33,7 @@ def recommend_size(data: dict[str, Any]) -> dict[str, Any]:
         checkpoint_path=data.get("checkpoint_path"),
         surrogate_checkpoint=data.get("surrogate_checkpoint"),
         device=data.get("device"),
-        num_samples=data.get("num_samples"),
+        candidate_pool_size=data.get("candidate_pool_size"),
         top_k=data.get("top_k"),
         latent_opt_steps=data.get("latent_opt_steps"),
         latent_lr=data.get("latent_lr"),
