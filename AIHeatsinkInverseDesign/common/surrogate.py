@@ -17,7 +17,7 @@ import torch.nn.functional as F
 from scipy.stats import boxcox
 from torch.utils.data import DataLoader
 
-from AIInverseDesign.common.data_adapter import (
+from AIHeatsinkInverseDesign.common.data_adapter import (
     CONDITION_KEYS,
     RECOMMEND_KEYS,
     ForwardDataset,
@@ -26,7 +26,7 @@ from AIInverseDesign.common.data_adapter import (
     extract_heatsink_ids,
     tensorize_target,
 )
-from AIInverseDesign.common.models import ConditionBaselineMLP, ForwardMLP
+from AIHeatsinkInverseDesign.common.models import ConditionBaselineMLP, ForwardMLP
 
 LOGGER = logging.getLogger(__name__)
 

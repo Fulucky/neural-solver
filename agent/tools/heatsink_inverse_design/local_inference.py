@@ -14,7 +14,7 @@ from typing import Any
 
 AGENT_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-AI_INVERSE_DESIGN_ROOT = PROJECT_ROOT / "AIInverseDesign"
+AI_INVERSE_DESIGN_ROOT = PROJECT_ROOT / "AIHeatsinkInverseDesign"
 INFER_DIR = AI_INVERSE_DESIGN_ROOT / "infer"
 
 for path in (PROJECT_ROOT, AI_INVERSE_DESIGN_ROOT):
@@ -24,7 +24,7 @@ for path in (PROJECT_ROOT, AI_INVERSE_DESIGN_ROOT):
 
 
 def active_config():
-    from AIInverseDesign.common.inference_config import load_inference_config
+    from AIHeatsinkInverseDesign.common.inference_config import load_inference_config
 
     return load_inference_config()
 
@@ -40,7 +40,7 @@ def checkpoint_path(path: str | None = None, method: str | None = None) -> str:
     if method:
         if method == config.method:
             return config.checkpoint_path
-        from AIInverseDesign.common.inference_config import default_checkpoint_for_method
+        from AIHeatsinkInverseDesign.common.inference_config import default_checkpoint_for_method
 
         return default_checkpoint_for_method(method)
     return config.checkpoint_path
@@ -158,7 +158,7 @@ def make_generate_args(
 @lru_cache(maxsize=4)
 def load_model_payload(path: str, device: str, surrogate_checkpoint: str) -> dict[str, Any]:
     import torch
-    from AIInverseDesign.common.heatsink_inverse_common import load_checkpoint
+    from AIHeatsinkInverseDesign.common.heatsink_inverse_common import load_checkpoint
 
     return load_checkpoint(path, torch.device(device), surrogate_checkpoint)
 
@@ -222,11 +222,11 @@ def generate_local_candidates(
         engineering_variant_min_norm_min_dist,
     )
     if selected_method == "diffusion":
-        from AIInverseDesign.infer.diffusion_inferencer import generate_rows
+        from AIHeatsinkInverseDesign.infer.diffusion_inferencer import generate_rows
 
         rows = generate_rows(args)
     else:
-        from AIInverseDesign.infer.cvae_inferencer import generate_rows
+        from AIHeatsinkInverseDesign.infer.cvae_inferencer import generate_rows
 
         rows = generate_rows(args, guided=(selected_method == "threshold-cvae"))
     return {
@@ -250,7 +250,7 @@ def score_local_candidates(
     method: str | None = None,
     surrogate_checkpoint_value: str | None = None,
 ) -> dict[str, Any]:
-    from AIInverseDesign.common.heatsink_inverse_common import score_candidates
+    from AIHeatsinkInverseDesign.common.heatsink_inverse_common import score_candidates
 
     condition = request["condition"]
     bbox = request["bbox"]
@@ -316,7 +316,7 @@ def refine_local_candidate(
     method: str | None = None,
     surrogate_checkpoint_value: str | None = None,
 ) -> dict[str, Any]:
-    from AIInverseDesign.common.data_adapter import GEOMETRY_BOUNDS, clip_fin_clear_spacing_for_pitch, clip_value
+    from AIHeatsinkInverseDesign.common.data_adapter import GEOMETRY_BOUNDS, clip_fin_clear_spacing_for_pitch, clip_value
 
     bbox = request["bbox"]
     refined = dict(candidate)

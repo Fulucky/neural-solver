@@ -7,8 +7,8 @@ import logging
 import random
 from typing import Dict, List
 
-from AIInverseDesign.common.data_adapter import extract_heatsink_ids, load_json_samples
-from AIInverseDesign.common.experiment_config import TEST_HEATSINKS
+from AIHeatsinkInverseDesign.common.data_adapter import extract_heatsink_ids, load_json_samples
+from AIHeatsinkInverseDesign.common.experiment_config import TEST_HEATSINKS
 
 LOGGER = logging.getLogger(__name__)
 

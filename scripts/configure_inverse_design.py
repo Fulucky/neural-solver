@@ -1,7 +1,7 @@
 """修改逆向设计默认推理配置。
 
 示例：
-python scripts/configure_inverse_design.py --method diffusion --checkpoint AIInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt
+python scripts/configure_inverse_design.py --method diffusion --checkpoint AIHeatsinkInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt
 python scripts/configure_inverse_design.py --show
 """
 
@@ -17,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from AIInverseDesign.common.inference_config import (  # noqa: E402
+from AIHeatsinkInverseDesign.common.inference_config import (  # noqa: E402
     SUPPORTED_METHODS,
     config_path,
     load_inference_config,

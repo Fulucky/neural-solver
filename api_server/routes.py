@@ -31,12 +31,12 @@ async def test_endpoint() -> dict[str, str]:
 @router.post("/aiSelectionInfer")
 async def ai_selection_infer(request: Request):
     try:
-        from AISelection.run_controller import start_ai_selection_infer
+        from AIHeatsinkSelection.run_controller import start_ai_selection_infer
 
         data = await request.json()
-        # AISelection 是正向选择流程，模型目录和结果目录由调用方传入。
-        models_path = data.get("models_path") or "/home/ma-user/work/AISelection/models"
-        results_path = data.get("results_path") or "/home/ma-user/work/AISelection"
+        # AIHeatsinkSelection 是正向选择流程，模型目录和结果目录由调用方传入。
+        models_path = data.get("models_path") or "/home/ma-user/work/AIHeatsinkSelection/models"
+        results_path = data.get("results_path") or "/home/ma-user/work/AIHeatsinkSelection"
         input_argv = data.get("input_argv")
 
         await asyncio.to_thread(start_ai_selection_infer, models_path, results_path, input_argv)
@@ -50,7 +50,7 @@ async def ai_selection_infer(request: Request):
 @router.post("/heatsink/recommend-size")
 async def recommend_size_endpoint(request: Request):
     try:
-        # AIInverseDesign 逆向推荐：根据工况、外包络和温度阈值生成候选几何尺寸。
+        # AIHeatsinkInverseDesign 逆向推荐：根据工况、外包络和温度阈值生成候选几何尺寸。
         data = await request.json()
         return await asyncio.to_thread(recommend_size, data)
     except Exception as exc:
@@ -62,7 +62,7 @@ async def recommend_size_endpoint(request: Request):
 @router.post("/heatsink/predict-temperature")
 async def predict_temperature_endpoint(request: Request):
     try:
-        # AIInverseDesign 正向温度预测：给定候选几何尺寸，返回预测 CPU 温度。
+        # AIHeatsinkInverseDesign 正向温度预测：给定候选几何尺寸，返回预测 CPU 温度。
         data = await request.json()
         return await asyncio.to_thread(predict_candidate_temperature, data)
     except Exception as exc:

@@ -40,14 +40,14 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Neural Solver API",
-        description="Unified API for AISelection and AIInverseDesign.",
+        description="Unified API for AIHeatsinkSelection and AIHeatsinkInverseDesign.",
         version="1.0.0",
         lifespan=lifespan,
     )
     # 兼容部分本地/代理环境下 Host 头不一致导致的 MCP streamable HTTP 访问问题。
     app.add_middleware(HostRewriteMiddleware)
 
-    # 普通 HTTP 路由：健康检查、AISelection 推理、AIInverseDesign 推荐/温度预测。
+    # 普通 HTTP 路由：健康检查、AIHeatsinkSelection 推理、AIHeatsinkInverseDesign 推荐/温度预测。
     app.include_router(router)
 
     # MCP 路由：供 Agent 以工具协议调用散热器逆向设计能力。

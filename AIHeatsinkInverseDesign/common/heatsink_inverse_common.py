@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import torch
 
-from AIInverseDesign.common.data_adapter import (
+from AIHeatsinkInverseDesign.common.data_adapter import (
     CONDITION_KEYS,
     RECOMMEND_KEYS,
     InverseDataset,
@@ -22,7 +22,7 @@ from AIInverseDesign.common.data_adapter import (
     build_threshold_augmented_training_tensors,
     build_threshold_condition_inputs,
 )
-from AIInverseDesign.common.checkpoints import (
+from AIHeatsinkInverseDesign.common.checkpoints import (
     CheckpointPayloadConfig,
     base_checkpoint_payload,
     load_checkpoint,
@@ -30,7 +30,7 @@ from AIInverseDesign.common.checkpoints import (
     load_diffusion_from_payload,
     save_checkpoint,
 )
-from AIInverseDesign.common.inverse_scoring import (
+from AIHeatsinkInverseDesign.common.inverse_scoring import (
     candidate_pool_summary,
     diversity_rerank_candidates,
     geometry_unique_count,
@@ -43,7 +43,7 @@ from AIInverseDesign.common.inverse_scoring import (
     write_candidates,
     write_pool_summary,
 )
-from AIInverseDesign.common.inverse_split import (
+from AIHeatsinkInverseDesign.common.inverse_split import (
     load_and_split,
     make_heatsink_split,
     parse_heatsink_id_list,
@@ -51,7 +51,7 @@ from AIInverseDesign.common.inverse_split import (
     split_grouped_random,
     split_specified_heatsinks,
 )
-from AIInverseDesign.common.surrogate import (
+from AIHeatsinkInverseDesign.common.surrogate import (
     ForwardInputScaler,
     SurrogateTrainConfig,
     build_forward_input_from_parts,

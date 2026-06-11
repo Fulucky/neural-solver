@@ -1,6 +1,6 @@
 {
   "method": "threshold-cvae",
-  "checkpoint_path": "AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt",
+  "checkpoint_path": "AIHeatsinkInverseDesign/outputs_guided_cvae/heatsink/best_model.pt",
   "surrogate_checkpoint": "",
   "device": "cpu",
   "candidate_pool_size": 1024,

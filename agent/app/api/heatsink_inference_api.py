@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-AI_INVERSE_DESIGN_ROOT = PROJECT_ROOT / "AIInverseDesign"
+AI_INVERSE_DESIGN_ROOT = PROJECT_ROOT / "AIHeatsinkInverseDesign"
 
 for path in (PROJECT_ROOT, AI_INVERSE_DESIGN_ROOT):
     path_text = str(path)
@@ -134,7 +134,7 @@ app = FastAPI(
 
 
 def _active_config():
-    from AIInverseDesign.common.inference_config import load_inference_config
+    from AIHeatsinkInverseDesign.common.inference_config import load_inference_config
 
     return load_inference_config()
 
@@ -150,7 +150,7 @@ def _checkpoint_path(path: str | None = None, method: str | None = None) -> str:
     if method:
         if method == config.method:
             return config.checkpoint_path
-        from AIInverseDesign.common.inference_config import default_checkpoint_for_method
+        from AIHeatsinkInverseDesign.common.inference_config import default_checkpoint_for_method
 
         return default_checkpoint_for_method(method)
     return config.checkpoint_path
@@ -273,7 +273,7 @@ def _make_args(payload: GenerateRequest) -> argparse.Namespace:
 @lru_cache(maxsize=4)
 def _load_payload(checkpoint_path: str, device: str, surrogate_checkpoint: str) -> dict[str, Any]:
     import torch
-    from AIInverseDesign.common.heatsink_inverse_common import load_checkpoint
+    from AIHeatsinkInverseDesign.common.heatsink_inverse_common import load_checkpoint
 
     return load_checkpoint(checkpoint_path, torch.device(device), surrogate_checkpoint)
 
@@ -287,7 +287,7 @@ def _score_rows(
     device: str | None,
     top_k: int | None = None,
 ) -> list[dict[str, Any]]:
-    from AIInverseDesign.common.heatsink_inverse_common import score_candidates as score_with_surrogate
+    from AIHeatsinkInverseDesign.common.heatsink_inverse_common import score_candidates as score_with_surrogate
 
     payload = _load_payload(_checkpoint_path(checkpoint_path, method), _device(device), _surrogate_checkpoint(surrogate_checkpoint))
     rows = score_with_surrogate(
@@ -312,11 +312,11 @@ def generate_candidates(payload: GenerateRequest) -> dict[str, Any]:
     args = _make_args(payload)
     method = _method(payload.method)
     if method == "diffusion":
-        from AIInverseDesign.infer.diffusion_inferencer import generate_rows
+        from AIHeatsinkInverseDesign.infer.diffusion_inferencer import generate_rows
 
         rows = generate_rows(args)
     else:
-        from AIInverseDesign.infer.cvae_inferencer import generate_rows
+        from AIHeatsinkInverseDesign.infer.cvae_inferencer import generate_rows
 
         rows = generate_rows(args, guided=(method == "threshold-cvae"))
     return {
@@ -368,7 +368,7 @@ def score_candidates(payload: ScoreRequest) -> dict[str, Any]:
 
 @app.post("/api/candidates/refine")
 def refine_candidate(payload: RefineRequest) -> dict[str, Any]:
-    from AIInverseDesign.common.data_adapter import GEOMETRY_BOUNDS, clip_fin_clear_spacing_for_pitch, clip_value
+    from AIHeatsinkInverseDesign.common.data_adapter import GEOMETRY_BOUNDS, clip_fin_clear_spacing_for_pitch, clip_value
 
     bbox = _bbox_dict(payload.request)
     refined = payload.candidate.model_dump(exclude_none=True)

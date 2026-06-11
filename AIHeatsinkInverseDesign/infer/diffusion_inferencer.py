@@ -7,7 +7,7 @@ import logging
 
 import torch
 
-from AIInverseDesign.common.heatsink_inverse_common import (
+from AIHeatsinkInverseDesign.common.heatsink_inverse_common import (
     add_common_infer_args,
     build_forward_input_from_parts,
     configure_logging,

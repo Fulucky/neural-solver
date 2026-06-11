@@ -13,7 +13,7 @@ env/
 *.tmp
 
 # Local model outputs and large checkpoints should be managed outside Git.
-AIInverseDesign/outputs_*/
+AIHeatsinkInverseDesign/outputs_*/
 *.pt
 *.pth
 

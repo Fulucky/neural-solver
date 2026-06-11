@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-AI_SELECTION_ROOT = REPO_ROOT / "AISelection"
-AI_INVERSE_DESIGN_ROOT = REPO_ROOT / "AIInverseDesign"
+AI_SELECTION_ROOT = REPO_ROOT / "AIHeatsinkSelection"
+AI_INVERSE_DESIGN_ROOT = REPO_ROOT / "AIHeatsinkInverseDesign"
 AGENT_ROOT = REPO_ROOT / "agent"
 
 MCP_DEFAULT_ROUTE_ENV = "HEATSINK_MCP_DEFAULT_ROUTE"
@@ -20,9 +20,9 @@ API_PORT = int(os.getenv("AI_SELECTION_API_PORT", "8080"))
 def configure_import_paths() -> None:
     """配置本地包导入路径。
 
-    这里显式把 AISelection 和 AIInverseDesign 都作为仓库根目录下的平级模块加入
-    Python 搜索路径。这样可以避免代码层面表现成 "AIInverseDesign 隶属于
-    AISelection" 的关系；API 层只是同时编排这两个能力。
+    这里显式把 AIHeatsinkSelection 和 AIHeatsinkInverseDesign 都作为仓库根目录下的平级模块加入
+    Python 搜索路径。这样可以避免代码层面表现成 "AIHeatsinkInverseDesign 隶属于
+    AIHeatsinkSelection" 的关系；API 层只是同时编排这两个能力。
     """
 
     paths = [

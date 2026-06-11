@@ -9,7 +9,7 @@ from typing import Dict, Iterable, List
 
 import torch
 
-from AIInverseDesign.common.data_adapter import (
+from AIHeatsinkInverseDesign.common.data_adapter import (
     CONDITION_KEYS,
     GEOMETRY_BOUNDS,
     RECOMMEND_KEYS,

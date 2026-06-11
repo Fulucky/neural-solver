@@ -261,7 +261,7 @@ The CSV also keeps two auxiliary diagnostics:
 ## Inference
 
 ```powershell
-python -m AIInverseDesign.infer.infer --method threshold-cvae -- `
+python -m AIHeatsinkInverseDesign.infer.infer --method threshold-cvae -- `
   --checkpoint-path .\outputs_guided_cvae\heatsink\best_model.pt `
   --output-csv .\threshold_heatsink_candidates.csv `
   --candidate-pool-size 1024 `

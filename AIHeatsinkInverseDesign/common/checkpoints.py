@@ -9,10 +9,10 @@ from typing import Dict
 
 import torch
 
-from AIInverseDesign.common.data_adapter import StandardScaler
-from AIInverseDesign.common.inverse_split import make_heatsink_split
-from AIInverseDesign.common.models import CVAE, DiffusionDenoiser, ForwardMLP
-from AIInverseDesign.common.surrogate import ForwardInputScaler, infer_forward_model_config, load_surrogate_checkpoint
+from AIHeatsinkInverseDesign.common.data_adapter import StandardScaler
+from AIHeatsinkInverseDesign.common.inverse_split import make_heatsink_split
+from AIHeatsinkInverseDesign.common.models import CVAE, DiffusionDenoiser, ForwardMLP
+from AIHeatsinkInverseDesign.common.surrogate import ForwardInputScaler, infer_forward_model_config, load_surrogate_checkpoint
 
 
 @dataclass(frozen=True)

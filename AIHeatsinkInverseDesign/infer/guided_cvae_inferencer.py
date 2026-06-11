@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from AIInverseDesign.infer.cvae_inferencer import build_parser, generate_rows
-from AIInverseDesign.common.heatsink_inverse_common import configure_logging, write_candidates
+from AIHeatsinkInverseDesign.infer.cvae_inferencer import build_parser, generate_rows
+from AIHeatsinkInverseDesign.common.heatsink_inverse_common import configure_logging, write_candidates
 
 
 LOGGER = logging.getLogger(__name__)

@@ -20,13 +20,13 @@ LEGACY_CHECKPOINT_ENV = "HEATSINK_THRESHOLD_CVAE_CHECKPOINT"
 CHECKPOINT_ENV = "HEATSINK_INFERENCE_CHECKPOINT"
 DEVICE_ENV = "HEATSINK_API_DEVICE"
 
-DEFAULT_CONFIG_PATH = REPO_ROOT / "AIInverseDesign" / "config" / "inference_config.json"
+DEFAULT_CONFIG_PATH = REPO_ROOT / "AIHeatsinkInverseDesign" / "config" / "inference_config.json"
 SUPPORTED_METHODS = ("cvae", "threshold-cvae", "diffusion")
 
 DEFAULT_CHECKPOINTS = {
-    "cvae": "AIInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt",
-    "threshold-cvae": "AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt",
-    "diffusion": "AIInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt",
+    "cvae": "AIHeatsinkInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt",
+    "threshold-cvae": "AIHeatsinkInverseDesign/outputs_guided_cvae/heatsink/best_model.pt",
+    "diffusion": "AIHeatsinkInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt",
 }
 
 

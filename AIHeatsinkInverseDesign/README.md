@@ -1,13 +1,13 @@
-# AIInverseDesign 推理脚本说明
+# AIHeatsinkInverseDesign 推理脚本说明
 
-`AIInverseDesign` 是从上层工程中抽出的散热器逆向设计推理运行子工程，用来承载推荐尺寸、温度预测和 Agent/MCP 调用所需的最小运行代码。
+`AIHeatsinkInverseDesign` 是从上层工程中抽出的散热器逆向设计推理运行子工程，用来承载推荐尺寸、温度预测和 Agent/MCP 调用所需的最小运行代码。
 
 当前目录只关注推理和 Agent 调用，不包含训练入口脚本、数据处理流程、实验分析脚本或前端页面。`common/` 中保留少量与 checkpoint 兼容相关的公共 helper，运行时入口只使用推理、加载、评分和导出能力。
 
 ## 目录内容
 
 ```text
-AIInverseDesign/
+AIHeatsinkInverseDesign/
   common/
     data_adapter.py
     experiment_config.py
@@ -55,9 +55,9 @@ diffusion
 ## Checkpoint 默认位置
 
 ```text
-cvae:           AIInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt
-threshold-cvae: AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt
-diffusion:      AIInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt
+cvae:           AIHeatsinkInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt
+threshold-cvae: AIHeatsinkInverseDesign/outputs_guided_cvae/heatsink/best_model.pt
+diffusion:      AIHeatsinkInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt
 ```
 
 如果 checkpoint 不在默认路径，请在命令行中通过 `--checkpoint-path` 指定。
@@ -68,8 +68,8 @@ diffusion:      AIInverseDesign/outputs_conditional_diffusion/heatsink/best_mode
 
 ```cmd
 cd /d D:\ZhouWJ\InverseDesign
-python -m AIInverseDesign.infer.infer --method threshold-cvae -- ^
-  --checkpoint-path AIInverseDesign\outputs_guided_cvae\heatsink\best_model.pt ^
+python -m AIHeatsinkInverseDesign.infer.infer --method threshold-cvae -- ^
+  --checkpoint-path AIHeatsinkInverseDesign\outputs_guided_cvae\heatsink\best_model.pt ^
   --output-csv threshold_heatsink_candidates.csv ^
   --candidate-pool-size 1024 ^
   --top-k 20 ^

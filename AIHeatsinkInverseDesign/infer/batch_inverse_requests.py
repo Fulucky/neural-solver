@@ -10,13 +10,13 @@ from typing import Dict, List
 
 import torch
 
-from AIInverseDesign.common.checkpoints import (
+from AIHeatsinkInverseDesign.common.checkpoints import (
     load_checkpoint,
     load_cvae_from_payload,
     load_diffusion_from_payload,
 )
-from AIInverseDesign.common.heatsink_inverse_common import make_inference_cond
-from AIInverseDesign.common.inverse_scoring import score_candidate_pool, select_candidates_from_pool
+from AIHeatsinkInverseDesign.common.heatsink_inverse_common import make_inference_cond
+from AIHeatsinkInverseDesign.common.inverse_scoring import score_candidate_pool, select_candidates_from_pool
 
 
 def build_parser() -> argparse.ArgumentParser:

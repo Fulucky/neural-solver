@@ -2,12 +2,12 @@
 
 `Neural Solver` 当前由两个平级业务模块和一个统一 API 层组成：
 
-- `AISelection/`：正向选择/模型评估流程，入口是 `AISelection.run_controller`。
-- `AIInverseDesign/`：散热器逆向设计，负责尺寸推荐、候选评分和温度预测。
-- `api_server/`：FastAPI 适配层，同时暴露 AISelection 和 AIInverseDesign 的 HTTP 接口。
+- `AIHeatsinkSelection/`：正向选择/模型评估流程，入口是 `AIHeatsinkSelection.run_controller`。
+- `AIHeatsinkInverseDesign/`：散热器逆向设计，负责尺寸推荐、候选评分和温度预测。
+- `api_server/`：FastAPI 适配层，同时暴露 AIHeatsinkSelection 和 AIHeatsinkInverseDesign 的 HTTP 接口。
 - `agent/`：Agent、MCP Server、工具脚本和技能描述。
 
-注意：`AIInverseDesign` 不是 `AISelection` 的子模块。代码里通过 `api_server/config.py` 把二者作为仓库根目录下的平级包加入导入路径，API 层只是统一编排它们。
+注意：`AIHeatsinkInverseDesign` 不是 `AIHeatsinkSelection` 的子模块。代码里通过 `api_server/config.py` 把二者作为仓库根目录下的平级包加入导入路径，API 层只是统一编排它们。
 
 ## 本地启动 API
 
@@ -91,7 +91,7 @@ curl.exe -X POST http://127.0.0.1:8080/heatsink/recommend-size `
 默认配置文件：
 
 ```text
-AIInverseDesign/config/inference_config.json
+AIHeatsinkInverseDesign/config/inference_config.json
 ```
 
 支持的技术路径：
@@ -113,7 +113,7 @@ python scripts\configure_inverse_design.py --show
 ```powershell
 python scripts\configure_inverse_design.py `
   --method threshold-cvae `
-  --checkpoint AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt `
+  --checkpoint AIHeatsinkInverseDesign/outputs_guided_cvae/heatsink/best_model.pt `
   --device cpu
 ```
 
@@ -122,7 +122,7 @@ python scripts\configure_inverse_design.py `
 ```powershell
 python scripts\configure_inverse_design.py `
   --method diffusion `
-  --checkpoint AIInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt `
+  --checkpoint AIHeatsinkInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt `
   --guidance-scale 0.08 `
   --device cpu
 ```
@@ -132,7 +132,7 @@ python scripts\configure_inverse_design.py `
 ```powershell
 python scripts\configure_inverse_design.py `
   --method cvae `
-  --checkpoint AIInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt `
+  --checkpoint AIHeatsinkInverseDesign/outputs_thresholdfree_cvae/heatsink/best_model.pt `
   --device cpu
 ```
 
@@ -197,7 +197,7 @@ curl.exe -X POST http://127.0.0.1:8080/heatsink/predict-temperature `
   -d "{\"request\":{\"condition\":{\"chip_length\":35,\"Rjc\":0.6,\"Rjb\":1.1,\"power\":85,\"wind_speed\":4},\"bbox\":{\"base_width\":40,\"base_depth\":40,\"total_height\":20},\"temp_threshold\":80},\"geometry\":{\"base_width\":40,\"base_depth\":40,\"total_height\":20,\"base_height\":2.5,\"fin_height\":17.5,\"fin_thickness\":1.2,\"fin_clear_spacing\":3.0,\"fin_break_thickness\":1.5,\"fin_break_width\":2.0},\"checkpoint_path\":\"D:\\path\\to\\best_model.pt\",\"device\":\"cpu\"}"
 ```
 
-## AISelection 推理接口
+## AIHeatsinkSelection 推理接口
 
 接口地址：
 
@@ -210,7 +210,7 @@ POST /aiSelectionInfer
 ```powershell
 curl.exe -X POST http://127.0.0.1:8080/aiSelectionInfer `
   -H "Content-Type: application/json" `
-  -d "{\"models_path\":\"D:\\path\\to\\AISelection\\models\",\"results_path\":\"D:\\path\\to\\results\",\"input_argv\":[\"1225\",\"85\",\"0.6\",\"1.1\",\"4\"]}"
+  -d "{\"models_path\":\"D:\\path\\to\\AIHeatsinkSelection\\models\",\"results_path\":\"D:\\path\\to\\results\",\"input_argv\":[\"1225\",\"85\",\"0.6\",\"1.1\",\"4\"]}"
 ```
 
 `input_argv` 顺序是：

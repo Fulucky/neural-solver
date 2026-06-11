@@ -9,7 +9,7 @@ description: 当用户进行散热器逆向设计、生成候选尺寸、切换 
 
 使用 `heatsink_inverse_design` MCP Server 作为 Agent 工具层。本 skill 指导 Agent 将用户的自然语言设计需求转成结构化 MCP tool 调用，并返回简洁的工程解释。
 
-当前逆向设计默认推理配置由 `AIInverseDesign/config/inference_config.json` 管理。默认技术路径、生成模型 checkpoint、温度代理模型 checkpoint、设备、rerank 和工程扰动参数都从该配置读取。用户也可以在单次 tool 调用中传入 `method`、`checkpoint_path`、`surrogate_checkpoint` 或其它参数临时覆盖配置。
+当前逆向设计默认推理配置由 `AIHeatsinkInverseDesign/config/inference_config.json` 管理。默认技术路径、生成模型 checkpoint、温度代理模型 checkpoint、设备、rerank 和工程扰动参数都从该配置读取。用户也可以在单次 tool 调用中传入 `method`、`checkpoint_path`、`surrogate_checkpoint` 或其它参数临时覆盖配置。
 
 MCP Server `agent/mcp/heatsink-inverse-design/server.py` 暴露 6 个业务 tools。生成、预测、评分、改型和导出支持 `route` 参数：
 
@@ -28,7 +28,7 @@ MCP Server `agent/mcp/heatsink-inverse-design/server.py` 暴露 6 个业务 tool
 
 模型路径规则：
 
-- `checkpoint_path`：生成模型 checkpoint，可选。不传时使用 `AIInverseDesign/config/inference_config.json`。
+- `checkpoint_path`：生成模型 checkpoint，可选。不传时使用 `AIHeatsinkInverseDesign/config/inference_config.json`。
 - `surrogate_checkpoint`：温度代理模型 checkpoint，可选。不传时使用生成模型 checkpoint 内嵌的 ForwardMLP 代理模型。
 - 两个路径都支持相对路径；相对路径按项目根目录解析。
 
@@ -110,8 +110,8 @@ MCP Server `agent/mcp/heatsink-inverse-design/server.py` 暴露 6 个业务 tool
 ```json
 {
   "method": "diffusion",
-  "checkpoint_path": "AIInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt",
-  "surrogate_checkpoint": "AIInverseDesign/outputs_surrogate/heatsink/surrogate.pt",
+  "checkpoint_path": "AIHeatsinkInverseDesign/outputs_conditional_diffusion/heatsink/best_model.pt",
+  "surrogate_checkpoint": "AIHeatsinkInverseDesign/outputs_surrogate/heatsink/surrogate.pt",
   "device": "cpu",
   "request": {
     "condition": {

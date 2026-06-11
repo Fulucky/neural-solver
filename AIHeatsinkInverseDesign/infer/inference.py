@@ -8,13 +8,13 @@ from typing import Dict, List
 
 import torch
 
-from AIInverseDesign.common.data_adapter import (
+from AIHeatsinkInverseDesign.common.data_adapter import (
     CONDITION_KEYS,
     RECOMMEND_KEYS,
     StandardScaler,
     build_full_geometry_dict,
 )
-from AIInverseDesign.common.models import CVAE, ForwardMLP
+from AIHeatsinkInverseDesign.common.models import CVAE, ForwardMLP
 
 
 @dataclass
