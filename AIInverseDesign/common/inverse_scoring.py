@@ -474,12 +474,35 @@ def normalized_geometry_metrics(rows: List[Dict[str, float]], payload: Dict) -> 
     }
 
 
+def _percentile(values: List[float], q: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return float(ordered[0])
+    q = max(0.0, min(1.0, q))
+    pos = q * (len(ordered) - 1)
+    lower = int(pos)
+    upper = min(lower + 1, len(ordered) - 1)
+    if lower == upper:
+        return float(ordered[lower])
+    upper_weight = pos - lower
+    lower_weight = 1.0 - upper_weight
+    return float(ordered[lower] * lower_weight + ordered[upper] * upper_weight)
+
+
 def candidate_pool_summary(rows: List[Dict[str, float]], payload: Dict) -> Dict[str, float]:
     if not rows:
         return {
             "pool_candidate_count": 0,
             "pool_threshold_ok_count": 0,
             "pool_threshold_ok_rate": 0.0,
+            "pool_best_pred_cpu_temp": 0.0,
+            "pool_p10_pred_cpu_temp": 0.0,
+            "pool_median_pred_cpu_temp": 0.0,
+            "pool_p90_pred_cpu_temp": 0.0,
+            "pool_threshold_margin_mean": 0.0,
+            "pool_threshold_margin_min": 0.0,
             "pool_unique_count": 0,
             "pool_mean_pairwise_geometry_distance": 0.0,
             "pool_min_pairwise_geometry_distance": 0.0,
@@ -487,12 +510,20 @@ def candidate_pool_summary(rows: List[Dict[str, float]], payload: Dict) -> Dict[
             "pool_normalized_min_pairwise_distance": 0.0,
         }
     ok_count = sum(1 for row in rows if bool(row["threshold_ok"]))
+    pred_values = [float(row["pred_cpu_temp"]) for row in rows]
+    threshold_margins = [float(row["temp_threshold"]) - float(row["pred_cpu_temp"]) for row in rows]
     raw_metrics = raw_geometry_metrics(rows)
     metrics = normalized_geometry_metrics(rows, payload)
     return {
         "pool_candidate_count": len(rows),
         "pool_threshold_ok_count": ok_count,
         "pool_threshold_ok_rate": ok_count / len(rows),
+        "pool_best_pred_cpu_temp": min(pred_values),
+        "pool_p10_pred_cpu_temp": _percentile(pred_values, 0.10),
+        "pool_median_pred_cpu_temp": _percentile(pred_values, 0.50),
+        "pool_p90_pred_cpu_temp": _percentile(pred_values, 0.90),
+        "pool_threshold_margin_mean": sum(threshold_margins) / len(threshold_margins),
+        "pool_threshold_margin_min": min(threshold_margins),
         "pool_unique_count": geometry_unique_count(rows),
         "pool_mean_pairwise_geometry_distance": raw_metrics["mean_pairwise_geometry_distance"],
         "pool_min_pairwise_geometry_distance": raw_metrics["min_pairwise_geometry_distance"],

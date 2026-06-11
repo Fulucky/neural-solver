@@ -12,6 +12,8 @@ from typing import List, Dict, Tuple
 import random
 import math
 
+LOGGER = logging.getLogger(__name__)
+
 # 现有数据的字段名称
 CONDITION_KEYS = [
     "chip_length",
@@ -51,8 +53,6 @@ RECOMMEND_KEYS = [
 ]
 
 TARGET_KEY = "cpu_temp"
-
-LOGGER = logging.getLogger(__name__)
 
 # 几何参数边界
 GEOMETRY_BOUNDS = {
@@ -262,87 +262,73 @@ def build_inverse_condition_inputs(samples: List[dict]) -> torch.Tensor:
         for sample in samples
     ], dtype=torch.float32)
 
+    # 温度上限 (1维) - 训练时用实际温度
     return torch.cat([cond, bbox], dim=1)
 
 
-def build_threshold_condition_inputs(samples: List[dict]) -> torch.Tensor:
-    """
-    Build guided-CVAE condition inputs.
-    Input: [condition(5) + bbox(3) + temp_threshold(1)].
+def build_recommend_targets(samples: List[dict]) -> torch.Tensor:
+    """构建逆向模型目标输出"""
+    return tensorize(samples, RECOMMEND_KEYS, "geometry")
 
-    During supervised training, the observed cpu_temp is used as the threshold
-    proxy. In inference, callers provide the desired temp_limit explicitly.
-    """
+
+def build_threshold_condition_inputs(samples: List[dict]) -> torch.Tensor:
+    """Build guided-CVAE inputs: condition(5) + bbox(3) + observed cpu_temp(1)."""
 
     base_cond = build_inverse_condition_inputs(samples)
-    threshold = tensorize_target(samples)
-    return torch.cat([base_cond, threshold], dim=1)
+    temps = tensorize_target(samples)
+    return torch.cat([base_cond, temps], dim=1)
 
 
 def build_threshold_augmented_training_tensors(
-    samples: List[dict],
+    train_samples: List[dict],
     n_threshold_samples: int = 3,
-    seed: int = 42,
     upper_strategy: str = "global_max",
-) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, float]]:
+    seed: int = 42,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, Dict[str, float]]:
     """
-    Build threshold-conditioned CVAE training tensors with threshold expansion.
+    Expand feasible geometry rows across looser threshold conditions.
 
-    For each observed feasible sample, create one row with temp_threshold equal
-    to its observed cpu_temp, plus n_threshold_samples - 1 rows with thresholds
-    sampled from [cpu_temp, upper]. This mirrors the heatpipe guided-CVAE path:
-    the same design is feasible for any threshold that is no lower than its
-    observed temperature.
+    Each observed sample is feasible at its observed temperature and any looser
+    threshold up to either the global or per-heatsink maximum training
+    temperature.
     """
 
-    if n_threshold_samples < 1:
-        raise ValueError("n_threshold_samples must be >= 1.")
+    if n_threshold_samples <= 0:
+        raise ValueError("n_threshold_samples must be positive.")
     if upper_strategy not in {"global_max", "heatsink_max"}:
         raise ValueError("upper_strategy must be one of: global_max, heatsink_max.")
 
-    base_cond = build_inverse_condition_inputs(samples)
-    geom = build_recommend_targets(samples)
-    temps = tensorize_target(samples).reshape(-1)
+    base_cond = build_inverse_condition_inputs(train_samples)
+    geom = build_recommend_targets(train_samples)
+    temps = tensorize_target(train_samples).reshape(-1)
     rng = random.Random(seed)
-
     global_max = float(torch.max(temps).item())
     heatsink_max: Dict[str, float] = {}
-    if upper_strategy == "heatsink_max":
-        for idx, sample in enumerate(samples):
-            heatsink = str(sample["heatsink"])
-            heatsink_max[heatsink] = max(heatsink_max.get(heatsink, -float("inf")), float(temps[idx].item()))
+    for idx, sample in enumerate(train_samples):
+        heatsink = str(sample["heatsink"])
+        heatsink_max[heatsink] = max(heatsink_max.get(heatsink, -float("inf")), float(temps[idx].item()))
 
     cond_rows = []
     geom_rows = []
-    threshold_values = []
-    for idx, sample in enumerate(samples):
+    observed_rows = []
+    for idx, sample in enumerate(train_samples):
         temp = float(temps[idx].item())
-        upper = global_max
-        if upper_strategy == "heatsink_max":
-            upper = heatsink_max[str(sample["heatsink"])]
-        taus = [temp]
-        for _ in range(max(0, n_threshold_samples - 1)):
-            if upper <= temp + 1e-8:
-                taus.append(temp)
-            else:
-                taus.append(float(rng.uniform(temp, upper)))
-        for tau in taus:
-            cond_rows.append(torch.cat([base_cond[idx], torch.tensor([tau], dtype=torch.float32)]))
+        upper = global_max if upper_strategy == "global_max" else heatsink_max[str(sample["heatsink"])]
+        thresholds = [temp]
+        for _ in range(n_threshold_samples - 1):
+            thresholds.append(temp if upper <= temp + 1e-8 else float(rng.uniform(temp, upper)))
+        for threshold in thresholds:
+            cond_rows.append(torch.cat([base_cond[idx], torch.tensor([threshold], dtype=torch.float32)]))
             geom_rows.append(geom[idx])
-            threshold_values.append(tau)
+            observed_rows.append(torch.tensor([temp], dtype=torch.float32))
 
-    cond_tensor = torch.stack(cond_rows, dim=0)
-    geom_tensor = torch.stack(geom_rows, dim=0)
     stats = {
-        "original_sample_count": float(len(samples)),
-        "augmented_sample_count": float(cond_tensor.shape[0]),
+        "threshold_rows": float(len(cond_rows)),
         "threshold_samples_per_layout": float(n_threshold_samples),
-        "threshold_min": float(min(threshold_values)) if threshold_values else 0.0,
-        "threshold_max": float(max(threshold_values)) if threshold_values else 0.0,
-        "threshold_mean": float(sum(threshold_values) / len(threshold_values)) if threshold_values else 0.0,
-        "threshold_upper_global_max": global_max,
+        "threshold_min": float(torch.min(temps).item()),
+        "threshold_max": global_max,
     }
-    return cond_tensor, geom_tensor, stats
+    return torch.stack(cond_rows), torch.stack(geom_rows), torch.stack(observed_rows), stats
 
 
 def build_inference_condition_tensor(
@@ -354,18 +340,11 @@ def build_inference_condition_tensor(
 
     values = [
         *(float(condition[k]) for k in CONDITION_KEYS),
-        float(bbox["base_width"]),
-        float(bbox["base_depth"]),
-        float(bbox["total_height"]),
+        *(float(bbox[k]) for k in BOX_KEYS),
     ]
     if temp_limit is not None:
         values.append(float(temp_limit))
     return torch.tensor([values], dtype=torch.float32)
-
-
-def build_recommend_targets(samples: List[dict]) -> torch.Tensor:
-    """构建逆向模型目标输出"""
-    return tensorize(samples, RECOMMEND_KEYS, "geometry")
 
 
 def clip_value(name: str, value: float) -> float:
