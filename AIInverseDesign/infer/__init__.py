@@ -1,1 +1,1 @@
-"""Inference entry points for AI inverse design methods."""
+"""Inference entry points and legacy inference helpers."""
