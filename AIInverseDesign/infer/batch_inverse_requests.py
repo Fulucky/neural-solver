@@ -10,12 +10,12 @@ from typing import Dict, List
 
 import torch
 
-from AIInverseDesign.common.heatsink_inverse_common import (
+from AIInverseDesign.common.checkpoints import (
     load_checkpoint,
     load_cvae_from_payload,
     load_diffusion_from_payload,
-    make_inference_cond,
 )
+from AIInverseDesign.common.heatsink_inverse_common import make_inference_cond
 from AIInverseDesign.common.inverse_scoring import score_candidate_pool, select_candidates_from_pool
 
 
