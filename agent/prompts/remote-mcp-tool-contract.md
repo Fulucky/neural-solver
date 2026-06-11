@@ -206,9 +206,7 @@ generate_candidates
       "base_depth": 40,
       "total_height": 20
     },
-    "temp_threshold": 80,
-    "candidate_pool_size": 64,
-    "top_k": 5
+    "temp_threshold": 80
   },
   "candidate_pool_size": 64,
   "top_k": 5
@@ -603,9 +601,7 @@ base_height
       "base_depth": 40,
       "total_height": 20
     },
-    "temp_threshold": 80,
-    "candidate_pool_size": 64,
-    "top_k": 5
+    "temp_threshold": 80
   },
   "candidate_pool_size": 64,
   "top_k": 5
