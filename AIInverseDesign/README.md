@@ -71,7 +71,7 @@ cd /d D:\ZhouWJ\InverseDesign
 python -m AIInverseDesign.infer.infer --method threshold-cvae -- ^
   --checkpoint-path AIInverseDesign\outputs_guided_cvae\heatsink\best_model.pt ^
   --output-csv threshold_heatsink_candidates.csv ^
-  --num-samples 1024 ^
+  --candidate-pool-size 1024 ^
   --top-k 20 ^
   --temp-threshold 80 ^
   --chip-length 35 ^

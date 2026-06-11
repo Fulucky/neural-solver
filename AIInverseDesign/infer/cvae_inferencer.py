@@ -4,20 +4,13 @@ from __future__ import annotations
 
 import argparse
 import logging
-import sys
-from pathlib import Path
 
 import torch
 
-LOGGER = logging.getLogger(__name__)
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-from common.heatsink_inverse_common import (
+from AIInverseDesign.common.heatsink_inverse_common import (
     add_common_infer_args,
     build_forward_input_from_parts,
+    configure_logging,
     load_checkpoint,
     load_cvae_from_payload,
     make_inference_cond,
@@ -28,6 +21,9 @@ from common.heatsink_inverse_common import (
     write_pool_summary,
     write_candidates,
 )
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def build_parser(description: str = "Generate heatsink candidates with threshold-free CVAE.") -> argparse.ArgumentParser:
@@ -45,13 +41,14 @@ def generate_rows(args: argparse.Namespace, guided: bool = False):
     payload = load_checkpoint(args.checkpoint_path, device, args.surrogate_checkpoint)
     cvae = load_cvae_from_payload(payload, device)
     condition, bbox, temp_threshold = request_from_args(args)
+    pool_size = args.candidate_pool_size
     cond_scaled = make_inference_cond(
-        payload, condition, bbox, temp_threshold, guided=guided, n=args.num_samples, device=device
+        payload, condition, bbox, temp_threshold, guided=guided, n=pool_size, device=device
     )
     cond_raw = cond_scaled.new_tensor(
         payload["cond_scaler"].inverse_transform(cond_scaled).detach().cpu().numpy()
     ).to(device)
-    z = torch.randn(args.num_samples, cvae.latent_dim, device=device)
+    z = torch.randn(pool_size, cvae.latent_dim, device=device)
 
     if args.latent_opt_steps > 0:
         z = z.detach().requires_grad_(True)
@@ -101,7 +98,7 @@ def generate_rows(args: argparse.Namespace, guided: bool = False):
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
+    configure_logging()
     args = build_parser().parse_args()
     rows = generate_rows(args, guided=False)
     write_candidates(rows, args.output_csv, args.output_json)

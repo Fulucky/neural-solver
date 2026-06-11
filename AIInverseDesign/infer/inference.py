@@ -1,6 +1,6 @@
-"""
-Inference utilities for the heatsink inverse-design pipeline.
-"""
+"""Inference utilities for the heatsink inverse-design pipeline."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,13 +8,13 @@ from typing import Dict, List
 
 import torch
 
-from common.data_adapter import (
+from AIInverseDesign.common.data_adapter import (
     CONDITION_KEYS,
     RECOMMEND_KEYS,
     StandardScaler,
     build_full_geometry_dict,
 )
-from common.models import CVAE, ForwardMLP
+from AIInverseDesign.common.models import CVAE, ForwardMLP
 
 
 @dataclass
@@ -97,7 +97,7 @@ def generate_candidates(
     condition: Dict[str, float],
     bbox: Dict[str, float],
     temp_limit: float,
-    n_samples: int = 512,
+    candidate_pool_size: int = 512,
 ) -> List[Dict[str, float]]:
     """
     Generate candidate geometries from CVAE.
@@ -119,8 +119,8 @@ def generate_candidates(
         device=device,
     )
 
-    cond_scaled = artifacts.cond_scaler.transform(cond_raw).repeat(n_samples, 1)
-    z = torch.randn(n_samples, artifacts.cvae_model.latent_dim, device=device)
+    cond_scaled = artifacts.cond_scaler.transform(cond_raw).repeat(candidate_pool_size, 1)
+    z = torch.randn(candidate_pool_size, artifacts.cvae_model.latent_dim, device=device)
 
     with torch.no_grad():
         pred_scaled = artifacts.cvae_model.decode(cond_scaled, z)
@@ -170,7 +170,7 @@ def infer_designs(
     condition: Dict[str, float],
     bbox: Dict[str, float],
     temp_limit: float,
-    n_generate: int = 1024,
+    candidate_pool_size: int = 1024,
     top_k: int = 20,
 ) -> List[Dict[str, float]]:
     """Run inverse-design inference and return top candidate geometries."""
@@ -180,6 +180,6 @@ def infer_designs(
         condition=condition,
         bbox=bbox,
         temp_limit=temp_limit,
-        n_samples=n_generate,
+        candidate_pool_size=candidate_pool_size,
     )
     return unique_and_sort_candidates(candidates, temp_limit=temp_limit, top_k=top_k)

@@ -36,7 +36,12 @@ from AIInverseDesign.common.data_adapter import (
     tensorize_target,
 )
 from AIInverseDesign.common.experiment_config import TEST_HEATSINKS
-from AIInverseDesign.common.inverse_scoring import score_candidates as score_candidates_with_engineering
+from AIInverseDesign.common.inverse_scoring import (
+    score_candidate_pool,
+    score_candidates as score_candidates_with_engineering,
+    select_candidates_from_pool,
+    write_pool_summary,
+)
 from AIInverseDesign.common.models import CVAE, ConditionBaselineMLP, DiffusionDenoiser, ForwardMLP
 
 LOGGER = logging.getLogger(__name__)
@@ -215,7 +220,7 @@ def add_common_infer_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--output-csv", type=str, default="")
     parser.add_argument("--output-json", type=str, default="")
-    parser.add_argument("--num-samples", "--num-generate", dest="num_samples", type=int, default=1024)
+    parser.add_argument("--candidate-pool-size", dest="candidate_pool_size", type=int, default=1024)
     parser.add_argument("--top-k", type=int, default=20)
     parser.add_argument("--temp-threshold", "--temp-limit", dest="temp_threshold", type=float, required=True)
     parser.add_argument("--chip-length", type=float, required=True)
@@ -239,6 +244,7 @@ def add_common_infer_args(parser: argparse.ArgumentParser) -> None:
         default=2.0,
         help="Preferred predicted-temperature window, in degC, for diversity reranking within each feasibility group.",
     )
+    parser.add_argument("--pool-summary-json", type=str, default="")
     parser.add_argument("--engineering-variant-mode", choices=["off", "auto", "on"], default="off")
     parser.add_argument("--engineering-variant-count-per-candidate", type=int, default=2)
     parser.add_argument("--engineering-variant-max-trials", type=int, default=20)

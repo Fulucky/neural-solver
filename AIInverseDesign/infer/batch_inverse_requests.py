@@ -5,22 +5,18 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import sys
 from pathlib import Path
 from typing import Dict, List
 
 import torch
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-from common.checkpoints import load_checkpoint, load_cvae_from_payload, load_diffusion_from_payload
-from common.heatsink_inverse_common import make_inference_cond
-from common.inverse_scoring import (
-    score_candidate_pool,
-    select_candidates_from_pool,
+from AIInverseDesign.common.heatsink_inverse_common import (
+    load_checkpoint,
+    load_cvae_from_payload,
+    load_diffusion_from_payload,
+    make_inference_cond,
 )
+from AIInverseDesign.common.inverse_scoring import score_candidate_pool, select_candidates_from_pool
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -33,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--summary-json", default="reports/inverse_batch_summary.json")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=2026)
-    parser.add_argument("--num-samples", type=int, default=1024)
+    parser.add_argument("--candidate-pool-size", type=int, default=1024)
     parser.add_argument("--top-k", type=int, default=20)
     parser.add_argument("--latent-opt-steps", type=int, default=40)
     parser.add_argument("--latent-lr", type=float, default=5e-2)
@@ -77,9 +73,10 @@ def generate_cvae_pool(payload: Dict, request: Dict, args: argparse.Namespace, g
     condition = request["condition"]
     bbox = request["bbox"]
     temp_threshold = float(request.get("temp_threshold", request.get("temp_limit")))
-    cond_scaled = make_inference_cond(payload, condition, bbox, temp_threshold, guided, args.num_samples, device)
+    pool_size = args.candidate_pool_size
+    cond_scaled = make_inference_cond(payload, condition, bbox, temp_threshold, guided, pool_size, device)
     cond_raw = payload["cond_scaler"].inverse_transform(cond_scaled).to(device)
-    z = torch.randn(args.num_samples, cvae.latent_dim, device=device)
+    z = torch.randn(pool_size, cvae.latent_dim, device=device)
 
     if args.latent_opt_steps > 0:
         z = z.detach().requires_grad_(True)
@@ -108,7 +105,8 @@ def generate_diffusion_pool(payload: Dict, request: Dict, args: argparse.Namespa
     condition = request["condition"]
     bbox = request["bbox"]
     temp_threshold = float(request.get("temp_threshold", request.get("temp_limit")))
-    cond_scaled = make_inference_cond(payload, condition, bbox, temp_threshold, guided=False, n=args.num_samples, device=device)
+    pool_size = args.candidate_pool_size
+    cond_scaled = make_inference_cond(payload, condition, bbox, temp_threshold, guided=False, n=pool_size, device=device)
     cond_raw = payload["cond_scaler"].inverse_transform(cond_scaled).to(device)
 
     cfg = payload["diffusion_config"]
@@ -116,10 +114,10 @@ def generate_diffusion_pool(payload: Dict, request: Dict, args: argparse.Namespa
     betas = torch.linspace(float(cfg["beta_start"]), float(cfg["beta_end"]), timesteps, device=device)
     alphas = 1.0 - betas
     alpha_bars = torch.cumprod(alphas, dim=0)
-    x = torch.randn(args.num_samples, model.target_dim, device=device)
+    x = torch.randn(pool_size, model.target_dim, device=device)
 
     for step in reversed(range(timesteps)):
-        t = torch.full((args.num_samples,), step, dtype=torch.long, device=device)
+        t = torch.full((pool_size,), step, dtype=torch.long, device=device)
         with torch.no_grad():
             pred_noise = model(x, cond_scaled, t)
             alpha_t = alphas[step]

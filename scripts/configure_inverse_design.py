@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--checkpoint", dest="checkpoint_path", help="Generator checkpoint path.")
     parser.add_argument("--surrogate-checkpoint", help="Optional ForwardMLP surrogate checkpoint.")
     parser.add_argument("--device", help="Inference device, for example cpu or cuda.")
-    parser.add_argument("--num-samples", type=int, help="Default generated candidate pool size.")
+    parser.add_argument("--candidate-pool-size", type=int, help="Default generated candidate pool size.")
     parser.add_argument("--top-k", type=int, help="Default number of returned candidates.")
     parser.add_argument("--latent-opt-steps", type=int, help="CVAE latent optimization steps.")
     parser.add_argument("--latent-lr", type=float, help="CVAE latent optimization learning rate.")
@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> None:
         "checkpoint_path": args.checkpoint_path,
         "surrogate_checkpoint": args.surrogate_checkpoint,
         "device": args.device,
-        "num_samples": args.num_samples,
+        "candidate_pool_size": args.candidate_pool_size,
         "top_k": args.top_k,
         "latent_opt_steps": args.latent_opt_steps,
         "latent_lr": args.latent_lr,

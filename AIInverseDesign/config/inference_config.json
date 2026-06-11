@@ -3,7 +3,7 @@
   "checkpoint_path": "AIInverseDesign/outputs_guided_cvae/heatsink/best_model.pt",
   "surrogate_checkpoint": "",
   "device": "cpu",
-  "num_samples": 1024,
+  "candidate_pool_size": 1024,
   "top_k": 10,
   "latent_opt_steps": 40,
   "latent_lr": 0.05,

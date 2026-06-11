@@ -4,20 +4,13 @@ from __future__ import annotations
 
 import argparse
 import logging
-import sys
-from pathlib import Path
 
 import torch
 
-LOGGER = logging.getLogger(__name__)
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-from common.heatsink_inverse_common import (
+from AIInverseDesign.common.heatsink_inverse_common import (
     add_common_infer_args,
     build_forward_input_from_parts,
+    configure_logging,
     load_checkpoint,
     load_diffusion_from_payload,
     make_inference_cond,
@@ -30,6 +23,9 @@ from common.heatsink_inverse_common import (
 )
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate heatsink candidates with conditional diffusion.")
     add_common_infer_args(parser)
@@ -40,9 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
-    args = build_parser().parse_args()
+def generate_rows(args: argparse.Namespace):
     device = torch.device(args.device)
     if args.seed is not None:
         torch.manual_seed(args.seed)
@@ -51,8 +45,9 @@ def main() -> None:
     payload = load_checkpoint(args.checkpoint_path, device, args.surrogate_checkpoint)
     model = load_diffusion_from_payload(payload, device)
     condition, bbox, temp_threshold = request_from_args(args)
+    pool_size = args.candidate_pool_size
     cond_scaled = make_inference_cond(
-        payload, condition, bbox, temp_threshold, guided=False, n=args.num_samples, device=device
+        payload, condition, bbox, temp_threshold, guided=False, n=pool_size, device=device
     )
     cond_raw = payload["cond_scaler"].inverse_transform(cond_scaled)
 
@@ -62,9 +57,9 @@ def main() -> None:
     alphas = 1.0 - betas
     alpha_bars = torch.cumprod(alphas, dim=0)
 
-    x = torch.randn(args.num_samples, model.target_dim, device=device)
+    x = torch.randn(pool_size, model.target_dim, device=device)
     for step in reversed(range(timesteps)):
-        t = torch.full((args.num_samples,), step, dtype=torch.long, device=device)
+        t = torch.full((pool_size,), step, dtype=torch.long, device=device)
         with torch.no_grad():
             pred_noise = model(x, cond_scaled, t)
             alpha_t = alphas[step]
@@ -95,7 +90,7 @@ def main() -> None:
     geom_raw = payload["recommend_scaler"].inverse_transform(x).detach().cpu().tolist()
     pool_rows = score_candidate_pool(payload, condition, bbox, geom_raw, temp_threshold)
     write_pool_summary(pool_rows, payload, args.pool_summary_json)
-    rows = select_candidates_from_pool(
+    return select_candidates_from_pool(
         rows=pool_rows,
         payload=payload,
         condition=condition,
@@ -113,6 +108,12 @@ def main() -> None:
         engineering_variant_min_norm_mean_dist=args.engineering_variant_min_norm_mean_dist,
         engineering_variant_min_norm_min_dist=args.engineering_variant_min_norm_min_dist,
     )
+
+
+def main() -> None:
+    configure_logging()
+    args = build_parser().parse_args()
+    rows = generate_rows(args)
     write_candidates(rows, args.output_csv, args.output_json)
     LOGGER.info("Generated %d candidates.", len(rows))
     for row in rows[: min(10, len(rows))]:

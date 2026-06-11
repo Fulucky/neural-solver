@@ -36,7 +36,7 @@ class InferenceConfig:
     checkpoint_path: str
     surrogate_checkpoint: str
     device: str
-    num_samples: int
+    candidate_pool_size: int
     top_k: int
     latent_opt_steps: int
     latent_lr: float
@@ -67,7 +67,7 @@ def _default_data() -> dict[str, Any]:
         "checkpoint_path": DEFAULT_CHECKPOINTS["threshold-cvae"],
         "surrogate_checkpoint": "",
         "device": "cpu",
-        "num_samples": 1024,
+        "candidate_pool_size": 1024,
         "top_k": 10,
         "latent_opt_steps": 40,
         "latent_lr": 5e-2,
@@ -141,7 +141,7 @@ def load_inference_config(path: str | Path | None = None) -> InferenceConfig:
         checkpoint_path=_resolve_path(checkpoint),
         surrogate_checkpoint=_resolve_path(str(data.get("surrogate_checkpoint") or "")),
         device=os.getenv(DEVICE_ENV) or str(data.get("device") or "cpu"),
-        num_samples=int(data.get("num_samples") or 1024),
+        candidate_pool_size=int(data.get("candidate_pool_size") or 1024),
         top_k=int(data.get("top_k") or 10),
         latent_opt_steps=int(data.get("latent_opt_steps") or 40),
         latent_lr=float(data.get("latent_lr") or 5e-2),
