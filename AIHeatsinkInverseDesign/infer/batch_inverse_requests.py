@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import logging
 from pathlib import Path
 from typing import Dict, List
 
@@ -15,8 +16,11 @@ from AIHeatsinkInverseDesign.common.checkpoints import (
     load_cvae_from_payload,
     load_diffusion_from_payload,
 )
-from AIHeatsinkInverseDesign.common.heatsink_inverse_common import make_inference_cond
+from AIHeatsinkInverseDesign.common.heatsink_inverse_common import configure_logging, make_inference_cond
 from AIHeatsinkInverseDesign.common.inverse_scoring import score_candidate_pool, select_candidates_from_pool
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -223,6 +227,7 @@ def summarize(requests: List[Dict], rows: List[Dict]) -> Dict:
 
 
 def main(argv: list[str] | None = None) -> None:
+    configure_logging()
     args = build_parser().parse_args(argv)
     device = torch.device(args.device)
     payload = load_checkpoint(args.checkpoint_path, device, args.surrogate_checkpoint)
@@ -236,7 +241,7 @@ def main(argv: list[str] | None = None) -> None:
         rows = select_rows(payload, request, args)
         all_rows.extend(flatten_rows(request, rows))
         if idx % 50 == 0 or idx == len(requests):
-            print(f"Processed {idx}/{len(requests)} requests")
+            LOGGER.info("Processed %d/%d requests", idx, len(requests))
 
     output_csv = Path(args.output_csv)
     summary_json = Path(args.summary_json)
@@ -244,8 +249,8 @@ def main(argv: list[str] | None = None) -> None:
     summary_json.parent.mkdir(parents=True, exist_ok=True)
     with summary_json.open("w", encoding="utf-8") as f:
         json.dump(summarize(requests, all_rows), f, ensure_ascii=False, indent=2)
-    print(f"Wrote {output_csv}")
-    print(f"Wrote {summary_json}")
+    LOGGER.info("Wrote %s", output_csv)
+    LOGGER.info("Wrote %s", summary_json)
 
 
 if __name__ == "__main__":
